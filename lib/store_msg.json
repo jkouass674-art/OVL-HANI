@@ -1,1 +1,154 @@
-{}
+{
+  "ACD6FF892AF39FBEEF55F2439E2EB033": {
+    "key": {
+      "remoteJid": "22550252467@s.whatsapp.net",
+      "fromMe": true,
+      "id": "ACD6FF892AF39FBEEF55F2439E2EB033"
+    },
+    "messageTimestamp": 1765159428,
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "protocolMessage": {
+        "type": "INITIAL_SECURITY_NOTIFICATION_SETTING_SYNC",
+        "initialSecurityNotificationSettingSync": {
+          "securityNotificationEnabled": false
+        }
+      }
+    }
+  },
+  "AC6D37CA823D5C94981078B5431724AF": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "AC6D37CA823D5C94981078B5431724AF"
+    },
+    "messageTimestamp": 1765159753,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ". menu"
+    }
+  },
+  "ACBB09797A7ED49FCE13E969477AF396": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "ACBB09797A7ED49FCE13E969477AF396"
+    },
+    "messageTimestamp": 1765159780,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ".menu"
+    }
+  },
+  "AC20722868F79D44F9393C7B1D015CD3": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "AC20722868F79D44F9393C7B1D015CD3"
+    },
+    "messageTimestamp": 1765159969,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ".menu"
+    }
+  },
+  "AC839D8560554E6A84D57726EC4D980E": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "AC839D8560554E6A84D57726EC4D980E"
+    },
+    "messageTimestamp": 1765159985,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ".ping"
+    }
+  },
+  "ACA090594DAA7D1FB6842BDB2C74D49D": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "ACA090594DAA7D1FB6842BDB2C74D49D"
+    },
+    "messageTimestamp": 1765159996,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ".info"
+    }
+  },
+  "AC9570E48DB7FA44878BB14A870024CF": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "AC9570E48DB7FA44878BB14A870024CF"
+    },
+    "messageTimestamp": 1765160124,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ".menu"
+    }
+  },
+  "AC5DB9D076133B47E3F680BC1CF8AFF6": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "AC5DB9D076133B47E3F680BC1CF8AFF6"
+    },
+    "messageTimestamp": 1765160135,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ".menu"
+    }
+  },
+  "AC450A3C1D3A0ED6538505AE09126400": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "AC450A3C1D3A0ED6538505AE09126400"
+    },
+    "messageTimestamp": 1765160235,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "conversation": ".menu"
+    }
+  },
+  "ACEAC54EC9C3FBE5F3D57FF41398A132": {
+    "key": {
+      "remoteJid": "66791824998402@lid",
+      "fromMe": true,
+      "id": "ACEAC54EC9C3FBE5F3D57FF41398A132"
+    },
+    "messageTimestamp": 1765160243,
+    "pushName": "Haniel😇",
+    "broadcast": false,
+    "status": 2,
+    "message": {
+      "reactionMessage": {
+        "key": {
+          "remoteJid": "66791824998402@lid",
+          "fromMe": true,
+          "id": "AC450A3C1D3A0ED6538505AE09126400"
+        },
+        "text": "🤣",
+        "senderTimestampMs": "1765160243632"
+      }
+    }
+  }
+}

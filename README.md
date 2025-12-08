@@ -1,261 +1,220 @@
-<h1 align="center">OVL-MD-V2</h1>
+# 🌟 HANI-MD - Bot WhatsApp Intelligent
 
 <p align="center">
-    <img alt="OVL" src="https://files.catbox.moe/gxcb9p.jpg">
+  <img src="https://img.shields.io/badge/Version-1.0.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Node.js-18+-green.svg" alt="Node.js">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+  <img src="https://img.shields.io/badge/WhatsApp-Multi--Device-brightgreen.svg" alt="WhatsApp">
 </p>
 
 <p align="center">
-    Un bot WhatsApp multi-appareil. N'oubliez pas de laisser une ⭐ (star) pour le projet.
-</p>
-
-<p align="center">
-    <a href="https://opensource.org/licenses/MIT">
-        <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="MIT License" />
-    </a>
-    <a href="https://github.com/WhiskeySockets/Baileys">
-        <img src="https://img.shields.io/badge/Baileys-Web%20API-orange?style=flat-square" alt="Using Baileys Web API" />
-    </a>
-    <a href="https://github.com/Ainz-devs/OVL-MD-V2/stargazers">
-        <img src="https://img.shields.io/github/stars/Ainz-devs/OVL-MD-V2?style=flat-square" alt="Stars" />
-    </a>
-    <a href="https://github.com/Ainz-devs/OVL-MD-V2/network/members">
-        <img src="https://img.shields.io/github/forks/Ainz-devs/OVL-MD-V2?style=flat-square" alt="Forks" />
-    </a>
+  <b>🔥 Bot WhatsApp puissant avec fonctionnalités avancées de surveillance, protection et extraction 🔥</b>
 </p>
 
 ---
 
-<details>
-  <summary>🚀 Déploiement de OVL-MD-V2</summary>
+## ✨ Fonctionnalités Principales
 
-### 🧬 Étape 1 : Fork du dépôt GitHub  
-[![Fork GitHub](https://img.shields.io/badge/Fork%20le%20Repo-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Ainz-devs/OVL-MD-V2/fork)
+### 🔐 Protection & Sécurité
+| Fonction | Description |
+|----------|-------------|
+| Anti-Delete | Récupère automatiquement les messages supprimés |
+| Anti-Spam | Protection contre le spam |
+| Anti-Bot | Bloque les autres bots |
+| Anti-Link | Supprime les liens non autorisés |
+| Anti-Call | Bloque et rejette les appels |
 
----
+### 🕵️ Surveillance Avancée
+| Fonction | Description |
+|----------|-------------|
+| Spy Mode | Surveiller l'activité d'un utilisateur en temps réel |
+| Interception Médias | Récupère automatiquement TOUTES les photos/vidéos des surveillés |
+| Activity Tracker | Suivi complet: messages, groupes, dernière vue |
+| Alertes instantanées | Notification à chaque activité |
 
-### 🔐 Étape 2 : Générer une SESSION ID
+### 👁️ Vue Unique (View Once)
+- ✅ Interception automatique des photos/vidéos à vue unique
+- ✅ Sauvegarde instantanée avant que l'expéditeur ne supprime
+- ✅ Envoi en privé au propriétaire
 
-📌 **Conserve la Session-ID dans un endroit sécurisé.** 
+### 📸 Statuts / Stories
+- ✅ Sauvegarde automatique de tous les statuts
+- ✅ Récupération des statuts supprimés
+- ✅ Visualisation en privé
 
-[![Obtenir SESSION-ID](https://img.shields.io/badge/Obtenir%20SESSION--ID-0A0A0A?style=for-the-badge&logo=key&logoColor=white)](https://ovl-web.koyeb.app/)  
-
----
-
-### 🗄️ Étape 3 : Créer une base de données (au besoin)
-[![Créer Base de Données](https://img.shields.io/badge/Supabase-Base%20de%20donn%C3%A9es-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-> Ou utilise une base de données existante.
-
-### 🚀 Étape 4 : Méthodes de déploiement
-
-#### <img src="https://img.shields.io/badge/Heroku-430098?style=for-the-badge&logo=heroku&logoColor=white" height="28" />
-- Créez un compte : [Lien Heroku](https://signup.heroku.com/)
-- Déploiement rapide : [Déployer sur Heroku](https://dashboard.heroku.com/new?template=https://github.com/Ainz-devs/OVL-MD-V2)
-
-#### <img src="https://img.shields.io/badge/Render-12100E?style=for-the-badge&logo=render&logoColor=white" height="28" />
-- Créez un compte : [Lien Render](https://dashboard.render.com/register)
-- Déploiement rapide : [Déployer sur Render](https://dashboard.render.com/web/new)
-
-#### <img src="https://img.shields.io/badge/Koyeb-000000?style=for-the-badge&logo=koyeb&logoColor=white" height="28" />
-- Créez un compte : [Lien Koyeb](https://app.koyeb.com/auth/signup)
-- Déploiement rapide : [Déployer sur Koyeb](https://app.koyeb.com/deploy?type=git&name=ovl-md&repository=https%3A%2F%2Fgithub.com%2FAinz-devs%2FOVL-MD-V2&branch=main&builder=dockerfile&instance_type=free&env%5BPREFIXE%5D=.&env%5BNOM_OWNER%5D=Ainz&env%5BNUMERO_OWNER%5D=226xxxxxxxx&env%5BMODE%5D=public&env%5BSESSION_ID%5D=&env%5BSTICKER_PACK_NAME%5D=%E1%B4%8F%E1%B4%A0%CA%9F-%E1%B4%8D%E1%B4%85-%E1%B4%A0%F0%9D%9F%B8&env%5BSTICKER_AUTHOR_NAME%5D=%E1%B4%80%C9%AA%C9%B4%E1%B4%A2%F0%9F%94%85%E2%9C%A8)
-
-#### <img src="https://img.shields.io/badge/Panel-grey?style=for-the-badge&logo=windows-terminal&logoColor=white" height="28" />
-- Créez un serveur
-- Ajoutez le fichier `index.js` ou `main.js`
-- Démarrez le bot
-
-#### <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" height="28" />
-- Ajoutez un fichier `.env`
-- Créez le fichier `.github/workflows/deploy.yml`
-
-</details>
+### 📁 Extraction de Médias
+- ✅ Voir tous les médias reçus par utilisateur
+- ✅ Télécharger images/vidéos/audios/documents
+- ✅ Historique complet des fichiers
 
 ---
 
-<details>
-  <summary>📝 Fichier index.js ou main.js pour déploiement sur panel</summary>
+## 📋 Liste Complète des Commandes
 
-```js
-const { spawnSync, spawn } = require('child_process');
-const { existsSync, mkdirSync, writeFileSync } = require('fs');
+### 📊 Général
+| Commande | Description |
+|----------|-------------|
+| `.menu` | Afficher le menu complet |
+| `.ping` | Vérifier la latence du bot |
+| `.info` | Informations du bot |
+| `.stats` | Statistiques d'utilisation |
 
-// Ajoutez ici vos variables d'environnement
-const env_file = ``;
+### 🕵️ Espionnage & Surveillance
+| Commande | Description |
+|----------|-------------|
+| `.spy @user` ou `.spy [numéro]` | Surveiller un utilisateur |
+| `.unspy @user` | Arrêter la surveillance |
+| `.spylist` | Liste des utilisateurs surveillés |
+| `.activity` | Top 15 des utilisateurs les plus actifs |
+| `.activity @user` | Voir l'activité détaillée d'un utilisateur |
 
-if (!env_file.trim()) {
-  console.error("❌ 'env_file' est vide. Veuillez renseigner vos variables d'environnement avant de lancer le script.");
-  process.exit(1);
-}
+### 📁 Extraction
+| Commande | Description |
+|----------|-------------|
+| `.extract` | Liste des utilisateurs avec médias stockés |
+| `.extract @user` | Voir les médias d'un utilisateur |
+| `.getmedia [numéro] [n°]` | Télécharger un média spécifique |
+| `.medialist` | Statistiques des médias stockés |
+| `.clearmedia` | Supprimer les médias stockés |
 
-let crashCount = 0;
-const crashLimit = 5;
-let lastCrashTime = Date.now();
-const crashResetDelay = 30000;
+### 🔐 Protection
+| Commande | Description |
+|----------|-------------|
+| `.antidelete on/off` | Anti-suppression de messages |
+| `.antispam on/off` | Anti-spam |
+| `.anticall on/off` | Anti-appel |
+| `.antilink on/off` | Anti-liens |
+| `.antibot on/off` | Anti-bots |
 
-function setupProject() {
-  if (!existsSync('ovl')) {
-    const clone = spawnSync('git', ['clone', 'https://github.com/Ainz-devs/OVL-MD-V2', 'ovl'], { stdio: 'inherit' });
-    if (clone.status !== 0) process.exit(1);
-  }
+### 👁️ Vue Unique
+| Commande | Description |
+|----------|-------------|
+| `.vv` | Récupérer une vue unique (répondre au message) |
+| `.listvv` | Liste des vues uniques interceptées |
 
-  if (!existsSync('ovl/.env')) {
-    mkdirSync('ovl', { recursive: true });
-    writeFileSync('ovl/.env', env_file);
-    console.log("✅ Fichier .env créé avec succès.");
-  }
+### 📸 Statuts
+| Commande | Description |
+|----------|-------------|
+| `.savestatus on/off` | Activer la sauvegarde auto |
+| `.deletedstatus` | Voir les statuts supprimés |
+| `.getstatus [n°]` | Récupérer un statut spécifique |
+| `.liststatus` | Liste de tous les statuts |
 
-  const install = spawnSync('npm', ['install'], { cwd: 'ovl', stdio: 'inherit' });
-  if (install.status !== 0) process.exit(1);
-}
+### 👥 Groupe
+| Commande | Description |
+|----------|-------------|
+| `.kick @user` | Expulser un membre |
+| `.add [numéro]` | Ajouter un membre |
+| `.promote @user` | Promouvoir en admin |
+| `.demote @user` | Rétrograder |
+| `.mute on/off` | Désactiver le bot |
+| `.warn @user` | Avertir un membre |
+| `.warnlist` | Liste des avertissements |
 
-function validateSetup() {
-  if (!existsSync('ovl/package.json')) {
-    process.exit(1);
-  }
+### 🎮 Fun
+| Commande | Description |
+|----------|-------------|
+| `.sticker` | Créer un sticker (répondre à une image) |
+| `.dice` | Lancer un dé |
+| `.flip` | Pile ou face |
+| `.quote` | Citation aléatoire |
 
-  const check = spawnSync('npm', ['ls'], { cwd: 'ovl', stdio: 'ignore' });
+### 🔧 Outils
+| Commande | Description |
+|----------|-------------|
+| `.calc [expression]` | Calculatrice |
+| `.tts [texte]` | Texte vers audio |
+| `.tr [lang] [texte]` | Traduction |
 
-  if (check.status !== 0) {
-    const reinstall = spawnSync('npm', ['install'], { cwd: 'ovl', stdio: 'inherit' });
-    if (reinstall.status !== 0) {
-      process.exit(1);
-    }
-  }
-}
+### 👑 Owner Seulement
+| Commande | Description |
+|----------|-------------|
+| `.ban @user` | Bannir du bot |
+| `.unban @user` | Débannir |
+| `.sudo @user` | Ajouter un admin bot |
+| `.delsudo @user` | Retirer un admin bot |
+| `.broadcast [msg]` | Diffuser dans tous les groupes |
+| `.restart` | Redémarrer le bot |
 
-function launchApp() {
-  const pm2 = spawn('npx', ['pm2', 'start', 'Ovl.js', '--name', 'ovl-md', '--attach'], {
-    cwd: 'ovl',
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
+---
 
-  let restartAttempts = 0;
+## 🚀 Déploiement
 
-  pm2.stdout?.on('data', (chunk) => {
-    const output = chunk.toString();
-    console.log(output);
-    if (output.includes('Connexion') || output.includes('ready')) {
-      restartAttempts = 0;
-    }
-  });
+### 📦 Installation Locale
 
-  pm2.stderr?.on('data', (chunk) => {
-    const output = chunk.toString();
-    if (output.includes('restart')) {
-      restartAttempts++;
-      if (restartAttempts > 3) {
-        spawnSync('npx', ['pm2', 'delete', 'ovl-md'], { cwd: 'ovl', stdio: 'inherit' });
-        startNodeFallback();
-      }
-    }
-  });
+```bash
+# 1. Cloner le repo
+git clone https://github.com/VOTRE_USERNAME/HANI-MD.git
+cd HANI-MD
 
-  pm2.on('exit', () => {
-    startNodeFallback();
-  });
+# 2. Installer les dépendances
+npm install
 
-  pm2.on('error', () => {
-    startNodeFallback();
-  });
-}
+# 3. Configurer le .env
+cp .env.example .env
+# Éditer .env avec vos informations
 
-function startNodeFallback() {
-  const child = spawn('node', ['Ovl.js'], { cwd: 'ovl', stdio: 'inherit' });
+# 4. Lancer le bot
+npm start
 
-  child.on('exit', (code) => {
-    const now = Date.now();
-    if (now - lastCrashTime > crashResetDelay) crashCount = 0;
-    crashCount++;
-    lastCrashTime = now;
-
-    if (crashCount > crashLimit) {
-      return;
-    }
-
-    startNodeFallback();
-  });
-}
-
-setupProject();
-validateSetup();
-launchApp();
+# 5. Scanner le QR code avec WhatsApp
 ```
 
-</details>
+### ☁️ Déploiement sur Render (Recommandé)
+
+1. **Fork** ce repository sur GitHub
+2. Allez sur [render.com](https://render.com) et connectez votre GitHub
+3. Cliquez sur **New → Web Service**
+4. Sélectionnez le repo **HANI-MD**
+5. Configurez :
+   - **Name**: `hani-md`
+   - **Region**: `Frankfurt` (ou le plus proche)
+   - **Build Command**: `npm install`
+   - **Start Command**: `node hani.js`
+6. Ajoutez les **Environment Variables** :
+   ```
+   PREFIXE = .
+   NOM_OWNER = VotreNom
+   NUMERO_OWNER = 22501XXXXXXXX
+   MODE = public
+   STICKER_PACK_NAME = HANI-MD
+   STICKER_AUTHOR_NAME = VotreNom
+   ```
+7. Cliquez sur **Create Web Service**
+8. Attendez le déploiement et scannez le QR code dans les logs
 
 ---
 
-<details>
-  <summary>⚙️ Fichier .github/workflows/deploy.yml</summary>
+## ⚙️ Configuration
 
-```yaml
-name: OVL-MD Bot CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 */5 * * *'
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: |
-          sudo apt update
-          sudo apt install -y ffmpeg
-          npm i
-      - run: timeout 18300s npm run Ovl
-```
-
-</details>
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| `PREFIXE` | Préfixe des commandes | `.` |
+| `NOM_OWNER` | Votre nom | `Hanie` |
+| `NUMERO_OWNER` | Votre numéro WhatsApp (sans +) | `2250150252467` |
+| `MODE` | `public` (tous) ou `private` (vous seul) | `public` |
+| `STICKER_PACK_NAME` | Nom du pack de stickers | `HANI-MD` |
+| `STICKER_AUTHOR_NAME` | Auteur des stickers | `Hanie` |
 
 ---
 
-<details>
-  <summary>🔐 Exemple de fichier .env</summary>
+## 🔒 Sécurité
 
-```env
-PREFIXE=.
-NOM_OWNER=Ainz
-NUMERO_OWNER=226xxxxxxxx
-MODE=public
-SESSION_ID=
-STICKER_PACK_NAME=ᴏᴠʟ-ᴍᴅ-ᴠ𝟸
-STICKER_AUTHOR_NAME=ᴀɪɴᴢ🔅✨
-```
-
-</details>
+⚠️ **Important** :
+- Ne partagez jamais votre fichier `.env`
+- Ne partagez jamais le dossier `DataBase/session/`
+- Utilisez les fonctionnalités de surveillance de manière éthique
 
 ---
 
-### 🌍 Rejoins la Communauté OVL
+## 📱 Support
 
-[![WhatsApp Support](https://img.shields.io/badge/Support%20WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://chat.whatsapp.com/HzhikAmOuYhFXGLmcyMo62)
-[![Telegram Channel](https://img.shields.io/badge/Canal%20Telegram-229ED9?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/ovlmd_tlg)
-[![WhatsApp Channel](https://img.shields.io/badge/Channel%20WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029VayTmvxHltYGCm0J7P0A)
-
-Partage, pose tes questions, et reste à jour avec toutes les nouveautés du projet !
+- **Auteur**: H2025
+- **Version**: 1.0.0
+- **License**: MIT
 
 ---
 
-### 👨‍💻 Développeur Principal
-- **Ainz**
----
-### 🙌 Remerciements
-- Haibo_lugh – pour son soutien et aide dans la gestion du bot au support.
-- Nathan Harmone – pour ses tutoriels YouTube.
-- Dr Djibi – pour son soutien.
----
-### 📄 Licence
-
-Distribué sous la licence MIT. Voir le fichier [LICENSE](./LICENSE) pour plus d’informations.
+<p align="center">
+  <b>⭐ Si vous aimez ce projet, n'oubliez pas de mettre une étoile ! ⭐</b>
+</p>

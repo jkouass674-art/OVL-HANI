@@ -1,1 +1,292 @@
-const _0xaa2f6=_0x565f;(function(_0x3bb233,_0x4e6f62){const _0x42d8af=_0x565f,_0x43e6fd=_0x3bb233();while(!![]){try{const _0x58099b=parseInt(_0x42d8af(0x1a5))/0x1*(-parseInt(_0x42d8af(0x19d))/0x2)+-parseInt(_0x42d8af(0x1a2))/0x3+parseInt(_0x42d8af(0x1af))/0x4+parseInt(_0x42d8af(0x1b2))/0x5*(-parseInt(_0x42d8af(0x18c))/0x6)+-parseInt(_0x42d8af(0x1a7))/0x7+parseInt(_0x42d8af(0x192))/0x8*(parseInt(_0x42d8af(0x19f))/0x9)+parseInt(_0x42d8af(0x18d))/0xa*(parseInt(_0x42d8af(0x196))/0xb);if(_0x58099b===_0x4e6f62)break;else _0x43e6fd['push'](_0x43e6fd['shift']());}catch(_0x116456){_0x43e6fd['push'](_0x43e6fd['shift']());}}}(_0x41e1,0x57309));const _0x45f618=(function(){let _0x3cfa26=!![];return function(_0x1cf2aa,_0x47e6f2){const _0x1f8edd=_0x3cfa26?function(){const _0x527c5f=_0x565f;if(_0x47e6f2){const _0x59d1ab=_0x47e6f2[_0x527c5f(0x19a)](_0x1cf2aa,arguments);return _0x47e6f2=null,_0x59d1ab;}}:function(){};return _0x3cfa26=![],_0x1f8edd;};}()),_0x114aca=_0x45f618(this,function(){const _0x2673a6=_0x565f,_0x421876={'wmekl':_0x2673a6(0x190)};return _0x114aca[_0x2673a6(0x1a1)]()[_0x2673a6(0x194)](_0x421876[_0x2673a6(0x18a)])[_0x2673a6(0x1a1)]()[_0x2673a6(0x184)](_0x114aca)[_0x2673a6(0x194)](_0x421876[_0x2673a6(0x18a)]);});_0x114aca();const {Sequelize,DataTypes}=require(_0xaa2f6(0x180)),config=require(_0xaa2f6(0x1ac)),{get_session}=require(_0xaa2f6(0x1a0)),db=config[_0xaa2f6(0x1b1)];let sequelize;function _0x565f(_0x108a5e,_0x5c6856){const _0x591ee4=_0x41e1();return _0x565f=function(_0x114aca,_0x45f618){_0x114aca=_0x114aca-0x17f;let _0x41e1f1=_0x591ee4[_0x114aca];if(_0x565f['JSGspP']===undefined){var _0x565f2c=function(_0x2d9f87){const _0x4afca0='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x1fe136='',_0xc1752d='',_0x68ce9d=_0x1fe136+_0x565f2c;for(let _0x1c45e7=0x0,_0x5e9eae,_0x6f09,_0x3a93ff=0x0;_0x6f09=_0x2d9f87['charAt'](_0x3a93ff++);~_0x6f09&&(_0x5e9eae=_0x1c45e7%0x4?_0x5e9eae*0x40+_0x6f09:_0x6f09,_0x1c45e7++%0x4)?_0x1fe136+=_0x68ce9d['charCodeAt'](_0x3a93ff+0xa)-0xa!==0x0?String['fromCharCode'](0xff&_0x5e9eae>>(-0x2*_0x1c45e7&0x6)):_0x1c45e7:0x0){_0x6f09=_0x4afca0['indexOf'](_0x6f09);}for(let _0x11bf8a=0x0,_0x4415ba=_0x1fe136['length'];_0x11bf8a<_0x4415ba;_0x11bf8a++){_0xc1752d+='%'+('00'+_0x1fe136['charCodeAt'](_0x11bf8a)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0xc1752d);};_0x565f['gdvdZX']=_0x565f2c,_0x108a5e=arguments,_0x565f['JSGspP']=!![];}const _0x168431=_0x591ee4[0x0],_0x24a3fc=_0x114aca+_0x168431,_0x4c6789=_0x108a5e[_0x24a3fc];if(!_0x4c6789){const _0x5ea96d=function(_0x5127a4){this['fjWOJU']=_0x5127a4,this['QFOPyi']=[0x1,0x0,0x0],this['EKkKpA']=function(){return'newState';},this['zwhxMy']='\x5cw+\x20*\x5c(\x5c)\x20*{\x5cw+\x20*',this['aOqiYO']='[\x27|\x22].+[\x27|\x22];?\x20*}';};_0x5ea96d['prototype']['BUdaaT']=function(){const _0x532e0d=new RegExp(this['zwhxMy']+this['aOqiYO']),_0x50855f=_0x532e0d['test'](this['EKkKpA']['toString']())?--this['QFOPyi'][0x1]:--this['QFOPyi'][0x0];return this['zkBABv'](_0x50855f);},_0x5ea96d['prototype']['zkBABv']=function(_0x9da54c){if(!Boolean(~_0x9da54c))return _0x9da54c;return this['EVCFNJ'](this['fjWOJU']);},_0x5ea96d['prototype']['EVCFNJ']=function(_0x91f398){for(let _0x338cc9=0x0,_0xcd3b2b=this['QFOPyi']['length'];_0x338cc9<_0xcd3b2b;_0x338cc9++){this['QFOPyi']['push'](Math['round'](Math['random']())),_0xcd3b2b=this['QFOPyi']['length'];}return _0x91f398(this['QFOPyi'][0x0]);},new _0x5ea96d(_0x565f)['BUdaaT'](),_0x41e1f1=_0x565f['gdvdZX'](_0x41e1f1),_0x108a5e[_0x24a3fc]=_0x41e1f1;}else _0x41e1f1=_0x4c6789;return _0x41e1f1;},_0x565f(_0x108a5e,_0x5c6856);}!db?sequelize=new Sequelize({'dialect':'sqlite','storage':_0xaa2f6(0x18e),'logging':![]}):sequelize=new Sequelize(db,{'dialect':_0xaa2f6(0x1ad),'ssl':!![],'protocol':_0xaa2f6(0x1ad),'dialectOptions':{'native':!![],'ssl':{'require':!![],'rejectUnauthorized':![]}},'logging':![]});const Connect=sequelize[_0xaa2f6(0x185)](_0xaa2f6(0x186),{'numero':{'type':DataTypes['STRING'],'primaryKey':!![]},'session_id':{'type':DataTypes[_0xaa2f6(0x195)],'allowNull':![]}},{'tableName':_0xaa2f6(0x193),'timestamps':![]});((async()=>{const _0xac0d37=_0xaa2f6;await Connect[_0xac0d37(0x1a3)]();})());async function saveSecondSession(_0x1891de){const _0x1b7b99=_0xaa2f6,_0x2d720d={'lyCvG':function(_0x5d0aae,_0x2f615c){return _0x5d0aae===_0x2f615c;},'tAHgl':_0x1b7b99(0x188),'NAUTS':_0x1b7b99(0x1a4),'TFFud':'❌\x20Numéro\x20introuvable\x20dans\x20les\x20creds','JmWmG':_0x1b7b99(0x1a8)};let _0x10ced9=await get_session(_0x1891de),_0x34b79a=_0x10ced9[_0x1b7b99(0x19e)];if(!_0x34b79a)return console['error']('❌\x20Session\x20invalide\x20pour\x20l’ID\x20:\x20'+_0x1891de),![];let _0x343803;try{_0x343803=_0x2d720d[_0x1b7b99(0x17f)](typeof _0x34b79a,_0x2d720d[_0x1b7b99(0x191)])?JSON[_0x1b7b99(0x182)](_0x34b79a):_0x34b79a;}catch(_0x554dbc){return console[_0x1b7b99(0x199)](_0x2d720d[_0x1b7b99(0x1ab)],_0x554dbc[_0x1b7b99(0x19c)]),![];}if(!_0x343803?.['me']?.['id'])return console[_0x1b7b99(0x199)](_0x2d720d[_0x1b7b99(0x18f)]),![];const _0x47dcee=_0x343803['me']['id'][_0x1b7b99(0x18b)](':')[0x0];try{return await Connect['upsert']({'numero':_0x47dcee,'session_id':_0x1891de}),console['log'](_0x1b7b99(0x1aa)+_0x47dcee+_0x1b7b99(0x181)+_0x1891de),!![];}catch(_0x24cc68){return console[_0x1b7b99(0x199)](_0x2d720d[_0x1b7b99(0x19b)],_0x24cc68[_0x1b7b99(0x19c)]),![];}}function _0x41e1(){const _0x40d475=['C3LUyW','4P2mievYCMv1CIbKzsbWyxjZAw5NiePtt04GoG','mty1ugj6u0LL','v2TIveq','nda4mJCYou1PveHMAa','4P2mievYCMv1CIbSB3jZigrLigWNzw5YzwDPC3rYzw1LBNqGoG','zMLUzefSBa','4PYfifnLC3nPB24Gzw5YzwDPC3rYW6LLidOG','tKfvvfm','lI4VC2v0','Cg9ZDgDYzxm','zMLUzej5ugS','mtC4mtmWmfLfB0vcEG','BNvTzxjV','refuqujbu0u','mJK1DxPgC3Do','BhLdDKC','C2vXDwvSAxPL','iokENca','CgfYC2u','BwfW','y29UC3rYDwn0B3i','zgvMAw5L','q29UBMvJDa','C2vZC2LVBL9Pza','C3rYAw5N','DfzLwhm','D21LA2W','C3bSAxq','ntCYnZzKvgzquhi','mtb3A2P5z2i','lI9KyxrHyMfZzs5KyG','vezgDwq','kcGOlISPkYKRksSK','Defiz2W','nZi0ntq0C2DUD1PZ','y29UBMvJDa','C2vHCMnO','u1rssu5h','mtK0mdqWodH4tMPmsgK','zgvZDhjVEq','zxHWB3j0CW','zxjYB3i','yxbWBhK','sM1xBuC','BwvZC2fNzq','ode4nMLWyuvlyG','y3jLzhm','nJneDw9WDKS','lI9ZzxnZAw9U','Dg9tDhjPBMC','mtK5mZeYmLDyqMzSCq'];_0x41e1=function(){return _0x40d475;};return _0x41e1();}async function getSecondSession(_0x1e8373){const _0x49ef87=_0xaa2f6,_0x54cabd={'tVeXs':function(_0x1f0c39,_0x5d6065){return _0x1f0c39(_0x5d6065);}},_0x420eb3=await Connect[_0x49ef87(0x1ae)](_0x1e8373);if(!_0x420eb3)return null;const _0x39e1aa=await _0x54cabd[_0x49ef87(0x189)](get_session,_0x420eb3[_0x49ef87(0x187)]);return _0x39e1aa||null;}async function getSecondAllSessions(){const _0x403592=_0xaa2f6,_0x4251b3={'zRbbV':_0x403592(0x1b0),'WkbTD':_0x403592(0x187)},_0x3cd00c=await Connect[_0x403592(0x1a9)]({'attributes':[_0x4251b3['zRbbV'],_0x4251b3[_0x403592(0x1a6)]]});return _0x3cd00c[_0x403592(0x183)](_0x339a5e=>({'numero':_0x339a5e[_0x403592(0x1b0)],'session_id':_0x339a5e[_0x403592(0x187)]}));}async function deleteSecondSession(_0x2e06fb){const _0x58e333=_0xaa2f6;return await Connect[_0x58e333(0x197)]({'where':{'numero':_0x2e06fb}});}module[_0xaa2f6(0x198)]={'saveSecondSession':saveSecondSession,'getSecondSession':getSecondSession,'getSecondAllSessions':getSecondAllSessions,'deleteSecondSession':deleteSecondSession};
+const _0xaa2f6 = _0x565f;
+(function (_0x3bb233, _0x4e6f62) {
+  const _0x42d8af = _0x565f,
+    _0x43e6fd = _0x3bb233();
+  while (!![]) {
+    try {
+      const _0x58099b =
+        (parseInt(_0x42d8af(0x1a5)) / 0x1) * (-parseInt(_0x42d8af(0x19d)) / 0x2) +
+        -parseInt(_0x42d8af(0x1a2)) / 0x3 +
+        parseInt(_0x42d8af(0x1af)) / 0x4 +
+        (parseInt(_0x42d8af(0x1b2)) / 0x5) * (-parseInt(_0x42d8af(0x18c)) / 0x6) +
+        -parseInt(_0x42d8af(0x1a7)) / 0x7 +
+        (parseInt(_0x42d8af(0x192)) / 0x8) * (parseInt(_0x42d8af(0x19f)) / 0x9) +
+        (parseInt(_0x42d8af(0x18d)) / 0xa) * (parseInt(_0x42d8af(0x196)) / 0xb);
+      if (_0x58099b === _0x4e6f62) break;
+      else _0x43e6fd["push"](_0x43e6fd["shift"]());
+    } catch (_0x116456) {
+      _0x43e6fd["push"](_0x43e6fd["shift"]());
+    }
+  }
+})(_0x41e1, 0x57309);
+const _0x45f618 = (function () {
+    let _0x3cfa26 = !![];
+    return function (_0x1cf2aa, _0x47e6f2) {
+      const _0x1f8edd = _0x3cfa26
+        ? function () {
+            const _0x527c5f = _0x565f;
+            if (_0x47e6f2) {
+              const _0x59d1ab = _0x47e6f2[_0x527c5f(0x19a)](_0x1cf2aa, arguments);
+              return ((_0x47e6f2 = null), _0x59d1ab);
+            }
+          }
+        : function () {};
+      return ((_0x3cfa26 = ![]), _0x1f8edd);
+    };
+  })(),
+  _0x114aca = _0x45f618(this, function () {
+    const _0x2673a6 = _0x565f,
+      _0x421876 = { wmekl: _0x2673a6(0x190) };
+    return _0x114aca[_0x2673a6(0x1a1)]()
+      [_0x2673a6(0x194)](_0x421876[_0x2673a6(0x18a)])
+      [_0x2673a6(0x1a1)]()
+      [_0x2673a6(0x184)](_0x114aca)
+      [_0x2673a6(0x194)](_0x421876[_0x2673a6(0x18a)]);
+  });
+_0x114aca();
+const { Sequelize, DataTypes } = require(_0xaa2f6(0x180)),
+  config = require(_0xaa2f6(0x1ac)),
+  { get_session } = require(_0xaa2f6(0x1a0)),
+  db = config[_0xaa2f6(0x1b1)];
+let sequelize;
+function _0x565f(_0x108a5e, _0x5c6856) {
+  const _0x591ee4 = _0x41e1();
+  return (
+    (_0x565f = function (_0x114aca, _0x45f618) {
+      _0x114aca = _0x114aca - 0x17f;
+      let _0x41e1f1 = _0x591ee4[_0x114aca];
+      if (_0x565f["JSGspP"] === undefined) {
+        var _0x565f2c = function (_0x2d9f87) {
+          const _0x4afca0 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=";
+          let _0x1fe136 = "",
+            _0xc1752d = "",
+            _0x68ce9d = _0x1fe136 + _0x565f2c;
+          for (
+            let _0x1c45e7 = 0x0, _0x5e9eae, _0x6f09, _0x3a93ff = 0x0;
+            (_0x6f09 = _0x2d9f87["charAt"](_0x3a93ff++));
+            ~_0x6f09 &&
+            ((_0x5e9eae = _0x1c45e7 % 0x4 ? _0x5e9eae * 0x40 + _0x6f09 : _0x6f09),
+            _0x1c45e7++ % 0x4)
+              ? (_0x1fe136 +=
+                  _0x68ce9d["charCodeAt"](_0x3a93ff + 0xa) - 0xa !== 0x0
+                    ? String["fromCharCode"](0xff & (_0x5e9eae >> ((-0x2 * _0x1c45e7) & 0x6)))
+                    : _0x1c45e7)
+              : 0x0
+          ) {
+            _0x6f09 = _0x4afca0["indexOf"](_0x6f09);
+          }
+          for (
+            let _0x11bf8a = 0x0, _0x4415ba = _0x1fe136["length"];
+            _0x11bf8a < _0x4415ba;
+            _0x11bf8a++
+          ) {
+            _0xc1752d +=
+              "%" + ("00" + _0x1fe136["charCodeAt"](_0x11bf8a)["toString"](0x10))["slice"](-0x2);
+          }
+          return decodeURIComponent(_0xc1752d);
+        };
+        ((_0x565f["gdvdZX"] = _0x565f2c), (_0x108a5e = arguments), (_0x565f["JSGspP"] = !![]));
+      }
+      const _0x168431 = _0x591ee4[0x0],
+        _0x24a3fc = _0x114aca + _0x168431,
+        _0x4c6789 = _0x108a5e[_0x24a3fc];
+      if (!_0x4c6789) {
+        const _0x5ea96d = function (_0x5127a4) {
+          ((this["fjWOJU"] = _0x5127a4),
+            (this["QFOPyi"] = [0x1, 0x0, 0x0]),
+            (this["EKkKpA"] = function () {
+              return "newState";
+            }),
+            (this["zwhxMy"] = "\x5cw+\x20*\x5c(\x5c)\x20*{\x5cw+\x20*"),
+            (this["aOqiYO"] = "[\x27|\x22].+[\x27|\x22];?\x20*}"));
+        };
+        ((_0x5ea96d["prototype"]["BUdaaT"] = function () {
+          const _0x532e0d = new RegExp(this["zwhxMy"] + this["aOqiYO"]),
+            _0x50855f = _0x532e0d["test"](this["EKkKpA"]["toString"]())
+              ? --this["QFOPyi"][0x1]
+              : --this["QFOPyi"][0x0];
+          return this["zkBABv"](_0x50855f);
+        }),
+          (_0x5ea96d["prototype"]["zkBABv"] = function (_0x9da54c) {
+            if (!Boolean(~_0x9da54c)) return _0x9da54c;
+            return this["EVCFNJ"](this["fjWOJU"]);
+          }),
+          (_0x5ea96d["prototype"]["EVCFNJ"] = function (_0x91f398) {
+            for (
+              let _0x338cc9 = 0x0, _0xcd3b2b = this["QFOPyi"]["length"];
+              _0x338cc9 < _0xcd3b2b;
+              _0x338cc9++
+            ) {
+              (this["QFOPyi"]["push"](Math["round"](Math["random"]())),
+                (_0xcd3b2b = this["QFOPyi"]["length"]));
+            }
+            return _0x91f398(this["QFOPyi"][0x0]);
+          }),
+          new _0x5ea96d(_0x565f)["BUdaaT"](),
+          (_0x41e1f1 = _0x565f["gdvdZX"](_0x41e1f1)),
+          (_0x108a5e[_0x24a3fc] = _0x41e1f1));
+      } else _0x41e1f1 = _0x4c6789;
+      return _0x41e1f1;
+    }),
+    _0x565f(_0x108a5e, _0x5c6856)
+  );
+}
+!db
+  ? (sequelize = new Sequelize({ dialect: "sqlite", storage: _0xaa2f6(0x18e), logging: ![] }))
+  : (sequelize = new Sequelize(db, {
+      dialect: _0xaa2f6(0x1ad),
+      ssl: !![],
+      protocol: _0xaa2f6(0x1ad),
+      dialectOptions: { native: !![], ssl: { require: !![], rejectUnauthorized: ![] } },
+      logging: ![],
+    }));
+const Connect = sequelize[_0xaa2f6(0x185)](
+  _0xaa2f6(0x186),
+  {
+    numero: { type: DataTypes["STRING"], primaryKey: !![] },
+    session_id: { type: DataTypes[_0xaa2f6(0x195)], allowNull: ![] },
+  },
+  { tableName: _0xaa2f6(0x193), timestamps: ![] },
+);
+(async () => {
+  const _0xac0d37 = _0xaa2f6;
+  await Connect[_0xac0d37(0x1a3)]();
+})();
+async function saveSecondSession(_0x1891de) {
+  const _0x1b7b99 = _0xaa2f6,
+    _0x2d720d = {
+      lyCvG: function (_0x5d0aae, _0x2f615c) {
+        return _0x5d0aae === _0x2f615c;
+      },
+      tAHgl: _0x1b7b99(0x188),
+      NAUTS: _0x1b7b99(0x1a4),
+      TFFud: "❌\x20Numéro\x20introuvable\x20dans\x20les\x20creds",
+      JmWmG: _0x1b7b99(0x1a8),
+    };
+  let _0x10ced9 = await get_session(_0x1891de),
+    _0x34b79a = _0x10ced9[_0x1b7b99(0x19e)];
+  if (!_0x34b79a)
+    return (
+      console["error"]("❌\x20Session\x20invalide\x20pour\x20l’ID\x20:\x20" + _0x1891de),
+      ![]
+    );
+  let _0x343803;
+  try {
+    _0x343803 = _0x2d720d[_0x1b7b99(0x17f)](typeof _0x34b79a, _0x2d720d[_0x1b7b99(0x191)])
+      ? JSON[_0x1b7b99(0x182)](_0x34b79a)
+      : _0x34b79a;
+  } catch (_0x554dbc) {
+    return (
+      console[_0x1b7b99(0x199)](_0x2d720d[_0x1b7b99(0x1ab)], _0x554dbc[_0x1b7b99(0x19c)]),
+      ![]
+    );
+  }
+  if (!_0x343803?.["me"]?.["id"])
+    return (console[_0x1b7b99(0x199)](_0x2d720d[_0x1b7b99(0x18f)]), ![]);
+  const _0x47dcee = _0x343803["me"]["id"][_0x1b7b99(0x18b)](":")[0x0];
+  try {
+    return (
+      await Connect["upsert"]({ numero: _0x47dcee, session_id: _0x1891de }),
+      console["log"](_0x1b7b99(0x1aa) + _0x47dcee + _0x1b7b99(0x181) + _0x1891de),
+      !![]
+    );
+  } catch (_0x24cc68) {
+    return (
+      console[_0x1b7b99(0x199)](_0x2d720d[_0x1b7b99(0x19b)], _0x24cc68[_0x1b7b99(0x19c)]),
+      ![]
+    );
+  }
+}
+function _0x41e1() {
+  const _0x40d475 = [
+    "C3LUyW",
+    "4P2mievYCMv1CIbKzsbWyxjZAw5NiePtt04GoG",
+    "mty1ugj6u0LL",
+    "v2TIveq",
+    "nda4mJCYou1PveHMAa",
+    "4P2mievYCMv1CIbSB3jZigrLigWNzw5YzwDPC3rYzw1LBNqGoG",
+    "zMLUzefSBa",
+    "4PYfifnLC3nPB24Gzw5YzwDPC3rYW6LLidOG",
+    "tKfvvfm",
+    "lI4VC2v0",
+    "Cg9ZDgDYzxm",
+    "zMLUzej5ugS",
+    "mtC4mtmWmfLfB0vcEG",
+    "BNvTzxjV",
+    "refuqujbu0u",
+    "mJK1DxPgC3Do",
+    "BhLdDKC",
+    "C2vXDwvSAxPL",
+    "iokENca",
+    "CgfYC2u",
+    "BwfW",
+    "y29UC3rYDwn0B3i",
+    "zgvMAw5L",
+    "q29UBMvJDa",
+    "C2vZC2LVBL9Pza",
+    "C3rYAw5N",
+    "DfzLwhm",
+    "D21LA2W",
+    "C3bSAxq",
+    "ntCYnZzKvgzquhi",
+    "mtb3A2P5z2i",
+    "lI9KyxrHyMfZzs5KyG",
+    "vezgDwq",
+    "kcGOlISPkYKRksSK",
+    "Defiz2W",
+    "nZi0ntq0C2DUD1PZ",
+    "y29UBMvJDa",
+    "C2vHCMnO",
+    "u1rssu5h",
+    "mtK0mdqWodH4tMPmsgK",
+    "zgvZDhjVEq",
+    "zxHWB3j0CW",
+    "zxjYB3i",
+    "yxbWBhK",
+    "sM1xBuC",
+    "BwvZC2fNzq",
+    "ode4nMLWyuvlyG",
+    "y3jLzhm",
+    "nJneDw9WDKS",
+    "lI9ZzxnZAw9U",
+    "Dg9tDhjPBMC",
+    "mtK5mZeYmLDyqMzSCq",
+  ];
+  _0x41e1 = function () {
+    return _0x40d475;
+  };
+  return _0x41e1();
+}
+async function getSecondSession(_0x1e8373) {
+  const _0x49ef87 = _0xaa2f6,
+    _0x54cabd = {
+      tVeXs: function (_0x1f0c39, _0x5d6065) {
+        return _0x1f0c39(_0x5d6065);
+      },
+    },
+    _0x420eb3 = await Connect[_0x49ef87(0x1ae)](_0x1e8373);
+  if (!_0x420eb3) return null;
+  const _0x39e1aa = await _0x54cabd[_0x49ef87(0x189)](get_session, _0x420eb3[_0x49ef87(0x187)]);
+  return _0x39e1aa || null;
+}
+async function getSecondAllSessions() {
+  const _0x403592 = _0xaa2f6,
+    _0x4251b3 = { zRbbV: _0x403592(0x1b0), WkbTD: _0x403592(0x187) },
+    _0x3cd00c = await Connect[_0x403592(0x1a9)]({
+      attributes: [_0x4251b3["zRbbV"], _0x4251b3[_0x403592(0x1a6)]],
+    });
+  return _0x3cd00c[_0x403592(0x183)]((_0x339a5e) => ({
+    numero: _0x339a5e[_0x403592(0x1b0)],
+    session_id: _0x339a5e[_0x403592(0x187)],
+  }));
+}
+async function deleteSecondSession(_0x2e06fb) {
+  const _0x58e333 = _0xaa2f6;
+  return await Connect[_0x58e333(0x197)]({ where: { numero: _0x2e06fb } });
+}
+module[_0xaa2f6(0x198)] = {
+  saveSecondSession: saveSecondSession,
+  getSecondSession: getSecondSession,
+  getSecondAllSessions: getSecondAllSessions,
+  deleteSecondSession: deleteSecondSession,
+};

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: hani-md
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: node hani.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PREFIXE
+        sync: false
+      - key: NOM_OWNER
+        sync: false
+      - key: NUMERO_OWNER
+        sync: false
+      - key: MODE
+        sync: false
+      - key: STICKER_PACK_NAME
+        sync: false
+      - key: STICKER_AUTHOR_NAME
+        sync: false

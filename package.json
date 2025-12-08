@@ -1,16 +1,23 @@
 {
-  "name": "OVL-MD-V2",
-  "version": "2.0.5",
-  "description": "Bot Whatsapp multi-appareil developpé par Ainz",
-  "main": "Ovl.js",
+  "name": "HANI-MD",
+  "version": "1.0.0",
+  "description": "🌟 HANI-MD - Bot WhatsApp Intelligent & Performant par H2025",
+  "main": "hani.js",
   "type": "commonjs",
   "scripts": {
-    "start": "pm2 start Ovl.js --attach --name ovl",
-    "stop": "pm2 stop all",
-    "Ovl": "pm2 start Ovl.js --attach --name ovl"
+    "start": "node hani.js",
+    "pm2": "pm2 start hani.js --attach --name hani",
+    "stop": "pm2 stop all"
   },
-  "keywords": ["Ainz", "OVL-MD-V2", "wa-bot", "Whatsapp", "Baileys", "Muti-device"],
-  "author": "Ainz-devs",
+  "keywords": [
+    "HANI-MD",
+    "H2025",
+    "wa-bot",
+    "Whatsapp",
+    "Baileys",
+    "Muti-device"
+  ],
+  "author": "H2025",
   "license": "MIT",
   "dependencies": {
     "@vitalets/google-translate-api": "^9.2.1",
@@ -29,11 +36,23 @@
     "pg": "^8.16.3",
     "pino": "^9.7.0",
     "pm2": "^6.0.8",
+    "qrcode-terminal": "^0.12.0",
+    "sequelize": "^6.37.7",
+    "sharp": "^0.34.5",
+    "simple-git": "^3.28.0",
     "sqlite3": "^5.1.7",
     "tempmail.lol": "^4.4.0",
-    "sequelize": "^6.37.7",
-    "simple-git": "^3.28.0",
     "wa-sticker-formatter": "^4.4.4",
     "wikipedia": "^2.1.2"
+  },
+  "devDependencies": {
+    "@babel/generator": "^7.28.5",
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5",
+    "escodegen": "^2.1.0",
+    "esprima": "^4.0.1",
+    "estraverse": "^5.3.0",
+    "prettier": "^3.7.4"
   }
 }

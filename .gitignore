@@ -4,3 +4,16 @@ node_modules/
 config_env.json
 cache_jid.json
 store_msg.json
+
+# Session WhatsApp
+DataBase/session/
+DataBase/hani.json
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Dossiers de déobfuscation
+deobf/

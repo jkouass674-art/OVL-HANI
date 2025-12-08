@@ -1,1 +1,331 @@
-const _0x28d032=_0xeebc;(function(_0x5c78a8,_0x50975e){const _0x3eb85a=_0xeebc,_0x58f4ac=_0x5c78a8();while(!![]){try{const _0x195d2c=parseInt(_0x3eb85a(0x14a))/0x1*(-parseInt(_0x3eb85a(0x161))/0x2)+-parseInt(_0x3eb85a(0x157))/0x3+-parseInt(_0x3eb85a(0x150))/0x4+-parseInt(_0x3eb85a(0x14c))/0x5+parseInt(_0x3eb85a(0x151))/0x6+-parseInt(_0x3eb85a(0x149))/0x7+-parseInt(_0x3eb85a(0x16d))/0x8*(-parseInt(_0x3eb85a(0x15f))/0x9);if(_0x195d2c===_0x50975e)break;else _0x58f4ac['push'](_0x58f4ac['shift']());}catch(_0x1ef19e){_0x58f4ac['push'](_0x58f4ac['shift']());}}}(_0x52bd,0xa4061));const _0x221b65=(function(){let _0x468285=!![];return function(_0x1d1f8e,_0x32cbbc){const _0x2fda92=_0x468285?function(){if(_0x32cbbc){const _0x30913c=_0x32cbbc['apply'](_0x1d1f8e,arguments);return _0x32cbbc=null,_0x30913c;}}:function(){};return _0x468285=![],_0x2fda92;};}()),_0x15b077=_0x221b65(this,function(){const _0x32071a=_0xeebc,_0x544168={'UVfVi':_0x32071a(0x164)};return _0x15b077[_0x32071a(0x144)]()[_0x32071a(0x143)]('(((.+)+)+)+$')[_0x32071a(0x144)]()[_0x32071a(0x171)](_0x15b077)['search'](_0x544168[_0x32071a(0x154)]);});_0x15b077();const {Sequelize,DataTypes}=require(_0x28d032(0x15c)),config=require('../set'),db=config['DATABASE'];let sequelize;!db?sequelize=new Sequelize({'dialect':'sqlite','storage':'./database.db','logging':![]}):sequelize=new Sequelize(db,{'dialect':_0x28d032(0x148),'ssl':!![],'protocol':_0x28d032(0x148),'dialectOptions':{'native':!![],'ssl':{'require':!![],'rejectUnauthorized':![]}},'logging':![]});function _0x52bd(){const _0x546281=['rxjYzxvYigXVCNmGzguGBgeGCSoPy3vWW6LYyxrPB24GzhuGDg9WigjHBNf1zsa6','y2fWywnPDgu','kcGOlISPkYKRksSK','twfLDfK','vhLWzsbKzsbZB2XKzsbPBNzHBgLKzs4GvxrPBgLZzsaNCg9YDgvMzxvPBgXLjYbVDsaNyMfUCxvLjY4','qKLhsu5u','C2f2zq','ywjZ','zxHWB3j0CW','zgvMAw5L','vxrPBgLZyxrLDxi','nda2nfjhwxboCW','sgLdyLG','vK9LDKu','Cg9YDgvMzxvPBgXL','y29UC3rYDwn0B3i','C2vHCMnO','Dg9tDhjPBMC','Aw5JBhvKzxm','yMfUCxvL','zMLUze9Uzq','Cg9ZDgDYzxm','mZaYntC5oxrXvMTIuW','mvvUAfnwzG','zMLUzefSBa','ndeYnZm3mhLZBLL4sq','revtqW','zxjYB3i','zMLUze9Yq3jLyxrL','mJG3odK0ofnJs1PYuW','nZq1ndiYnNfPyKLfwG','C3LUyW','BwfW','vvzMvMK','ChnLDwrV','vvLfAu0','mZGZnteWmvLfsgnAEG','EfrhyNy','u1rssu5h','y2fWywnPDgvFyMfUCxvL','zgf0yvzHBhvLCW','C2vXDwvSAxPL','CMnfyNi','D2fSBgv0','ntuWodLUrxbot2K','zgvZDhjVEq','odq4mZi2v1LuB1vO'];_0x52bd=function(){return _0x546281;};return _0x52bd();}const ECONOMIE=sequelize[_0x28d032(0x16b)]('ECONOMIE',{'id':{'type':DataTypes['STRING'],'primaryKey':!![]},'pseudo':{'type':DataTypes[_0x28d032(0x159)],'defaultValue':_0x28d032(0x16c)},'portefeuille':{'type':DataTypes['BIGINT'],'defaultValue':0x0},'banque':{'type':DataTypes[_0x28d032(0x167)],'defaultValue':0x0},'capacite_banque':{'type':DataTypes['BIGINT'],'defaultValue':0x2710},'last_bonus':{'type':DataTypes[_0x28d032(0x167)],'defaultValue':0x0}},{'tableName':'economie','timestamps':![]});function _0xeebc(_0x1edc37,_0x531b80){const _0x183faa=_0x52bd();return _0xeebc=function(_0x15b077,_0x221b65){_0x15b077=_0x15b077-0x143;let _0x52bd48=_0x183faa[_0x15b077];if(_0xeebc['YoTKjS']===undefined){var _0xeebc2a=function(_0x5b7747){const _0x1475ab='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x4601e7='',_0x3fdda0='',_0xa2388f=_0x4601e7+_0xeebc2a;for(let _0x334a89=0x0,_0x37edcc,_0x57be88,_0x15e752=0x0;_0x57be88=_0x5b7747['charAt'](_0x15e752++);~_0x57be88&&(_0x37edcc=_0x334a89%0x4?_0x37edcc*0x40+_0x57be88:_0x57be88,_0x334a89++%0x4)?_0x4601e7+=_0xa2388f['charCodeAt'](_0x15e752+0xa)-0xa!==0x0?String['fromCharCode'](0xff&_0x37edcc>>(-0x2*_0x334a89&0x6)):_0x334a89:0x0){_0x57be88=_0x1475ab['indexOf'](_0x57be88);}for(let _0xa9c519=0x0,_0x353789=_0x4601e7['length'];_0xa9c519<_0x353789;_0xa9c519++){_0x3fdda0+='%'+('00'+_0x4601e7['charCodeAt'](_0xa9c519)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x3fdda0);};_0xeebc['qvfCDW']=_0xeebc2a,_0x1edc37=arguments,_0xeebc['YoTKjS']=!![];}const _0x27f45b=_0x183faa[0x0],_0xc4a5e9=_0x15b077+_0x27f45b,_0x51970c=_0x1edc37[_0xc4a5e9];if(!_0x51970c){const _0x205b00=function(_0x367999){this['NPrmvR']=_0x367999,this['bobwXf']=[0x1,0x0,0x0],this['RTbXdC']=function(){return'newState';},this['nzyiIp']='\x5cw+\x20*\x5c(\x5c)\x20*{\x5cw+\x20*',this['hfFltl']='[\x27|\x22].+[\x27|\x22];?\x20*}';};_0x205b00['prototype']['ytFJmo']=function(){const _0x147db1=new RegExp(this['nzyiIp']+this['hfFltl']),_0x4f86ec=_0x147db1['test'](this['RTbXdC']['toString']())?--this['bobwXf'][0x1]:--this['bobwXf'][0x0];return this['jUQFtj'](_0x4f86ec);},_0x205b00['prototype']['jUQFtj']=function(_0x134d2c){if(!Boolean(~_0x134d2c))return _0x134d2c;return this['lhHlpY'](this['NPrmvR']);},_0x205b00['prototype']['lhHlpY']=function(_0x482b82){for(let _0x53687b=0x0,_0x2d81a5=this['bobwXf']['length'];_0x53687b<_0x2d81a5;_0x53687b++){this['bobwXf']['push'](Math['round'](Math['random']())),_0x2d81a5=this['bobwXf']['length'];}return _0x482b82(this['bobwXf'][0x0]);},new _0x205b00(_0xeebc)['ytFJmo'](),_0x52bd48=_0xeebc['qvfCDW'](_0x52bd48),_0x1edc37[_0xc4a5e9]=_0x52bd48;}else _0x52bd48=_0x51970c;return _0x52bd48;},_0xeebc(_0x1edc37,_0x531b80);}((async()=>{const _0x4d83c9=_0x28d032;await ECONOMIE[_0x4d83c9(0x152)]();})());async function ajouterUtilisateur(_0x3843e4,_0xa2f8ca=_0x28d032(0x16c)){const _0x73adb5=_0x28d032;return await ECONOMIE[_0x73adb5(0x14f)]({'where':{'id':_0x3843e4},'defaults':{'pseudo':_0xa2f8ca,'portefeuille':0x0,'banque':0x0,'capacite_banque':0x3e8,'last_bonus':0x0}});}async function supprimerUtilisateur(_0x280a3c){const _0x45e94e=_0x28d032;return await ECONOMIE[_0x45e94e(0x160)]({'where':{'id':_0x280a3c}});}async function getInfosUtilisateur(_0x4f5bba){const _0x5442b6=_0x28d032,_0x18c283=await ECONOMIE['findOne']({'where':{'id':_0x4f5bba}});if(!_0x18c283)return null;return _0x18c283[_0x5442b6(0x15b)];}async function modifierSolde(_0xb1cda,_0x338b5e=_0x28d032(0x170),_0x4930e6=0x0){const _0x28da38=_0x28d032,_0x5125c0={'HiCbX':'portefeuille','xJlSx':_0x28da38(0x146),'xTGbv':function(_0x839687,_0x379ffb){return _0x839687(_0x379ffb);},'foYtY':function(_0x298c6f,_0x4c81be){return _0x298c6f<_0x4c81be;},'UYEiM':function(_0x9a1f49,_0x38c909){return _0x9a1f49-_0x38c909;},'rcEbr':function(_0xfaf61f,_0x4304c9){return _0xfaf61f+_0x4304c9;}},_0x7b63c7=await ECONOMIE[_0x28da38(0x147)]({'where':{'id':_0xb1cda}});if(!_0x7b63c7)return null;if(![_0x5125c0[_0x28da38(0x16e)],_0x5125c0['xJlSx']][_0x28da38(0x145)](_0x338b5e))throw new Error(_0x28da38(0x166));const _0x12f2cb=Number(_0x7b63c7[_0x338b5e]),_0x13b658=Math[_0x28da38(0x169)](_0x5125c0[_0x28da38(0x158)](Number,_0x4930e6)),_0x5bbc89=_0x5125c0['foYtY'](_0x4930e6,0x0)?Math['max'](_0x5125c0[_0x28da38(0x156)](_0x12f2cb,_0x13b658),0x0):_0x5125c0[_0x28da38(0x15d)](_0x12f2cb,_0x13b658);return _0x7b63c7[_0x338b5e]=_0x5bbc89,await _0x7b63c7[_0x28da38(0x168)](),{'nouveauSolde':_0x5bbc89};}async function mettreAJourCapaciteBanque(_0x4764b2,_0x30f49c){const _0x2c02cd=_0x28d032,_0x3b0539=await ECONOMIE[_0x2c02cd(0x147)]({'where':{'id':_0x4764b2}});if(!_0x3b0539)return null;return _0x3b0539[_0x2c02cd(0x15a)]=_0x30f49c,await _0x3b0539['save'](),_0x3b0539[_0x2c02cd(0x15a)];}async function changerPseudo(_0x7cb012,_0x40b7ce){const _0x5c1a65=_0x28d032,_0x2fb174=await ECONOMIE[_0x5c1a65(0x147)]({'where':{'id':_0x7cb012}});if(!_0x2fb174)return null;return _0x2fb174[_0x5c1a65(0x155)]=_0x40b7ce,await _0x2fb174[_0x5c1a65(0x168)](),_0x2fb174[_0x5c1a65(0x155)];}async function resetEconomie(_0x52575e,_0x549e45={'wallet':![],'banque':![],'capacite':![]}){const _0x5ed1e1=_0x28d032,_0x507c48=await ECONOMIE['findOne']({'where':{'id':_0x52575e}});if(!_0x507c48)return null;if(_0x549e45[_0x5ed1e1(0x15e)])_0x507c48[_0x5ed1e1(0x170)]=0x0;if(_0x549e45[_0x5ed1e1(0x146)])_0x507c48[_0x5ed1e1(0x146)]=0x0;if(_0x549e45[_0x5ed1e1(0x163)])_0x507c48[_0x5ed1e1(0x15a)]=0x2710;return await _0x507c48['save'](),_0x507c48[_0x5ed1e1(0x15b)];}async function TopBanque(){const _0x4220c1=_0x28d032,_0x27d912={'VOevE':_0x4220c1(0x14d),'uxVue':_0x4220c1(0x170),'LbNef':_0x4220c1(0x163),'MaetY':_0x4220c1(0x162)};try{const _0x552e5f=await ECONOMIE[_0x4220c1(0x14b)]({'order':[['banque',_0x27d912[_0x4220c1(0x16f)]]],'limit':0xa,'attributes':['id',_0x27d912['uxVue'],_0x4220c1(0x146),_0x27d912['LbNef']]});return _0x552e5f[_0x4220c1(0x153)](_0x2a381a=>({'id':_0x2a381a['id'],'portefeuille':_0x2a381a[_0x4220c1(0x170)],'banque':_0x2a381a[_0x4220c1(0x146)],'capacite':_0x2a381a[_0x4220c1(0x163)]}));}catch(_0x237080){return console[_0x4220c1(0x14e)](_0x27d912[_0x4220c1(0x165)],_0x237080),[];}}module[_0x28d032(0x16a)]={'TopBanque':TopBanque,'ECONOMIE':ECONOMIE,'ajouterUtilisateur':ajouterUtilisateur,'supprimerUtilisateur':supprimerUtilisateur,'getInfosUtilisateur':getInfosUtilisateur,'modifierSolde':modifierSolde,'mettreAJourCapaciteBanque':mettreAJourCapaciteBanque,'changerPseudo':changerPseudo,'resetEconomie':resetEconomie};
+const _0x28d032 = _0xeebc;
+(function (_0x5c78a8, _0x50975e) {
+  const _0x3eb85a = _0xeebc,
+    _0x58f4ac = _0x5c78a8();
+  while (!![]) {
+    try {
+      const _0x195d2c =
+        (parseInt(_0x3eb85a(0x14a)) / 0x1) * (-parseInt(_0x3eb85a(0x161)) / 0x2) +
+        -parseInt(_0x3eb85a(0x157)) / 0x3 +
+        -parseInt(_0x3eb85a(0x150)) / 0x4 +
+        -parseInt(_0x3eb85a(0x14c)) / 0x5 +
+        parseInt(_0x3eb85a(0x151)) / 0x6 +
+        -parseInt(_0x3eb85a(0x149)) / 0x7 +
+        (-parseInt(_0x3eb85a(0x16d)) / 0x8) * (-parseInt(_0x3eb85a(0x15f)) / 0x9);
+      if (_0x195d2c === _0x50975e) break;
+      else _0x58f4ac["push"](_0x58f4ac["shift"]());
+    } catch (_0x1ef19e) {
+      _0x58f4ac["push"](_0x58f4ac["shift"]());
+    }
+  }
+})(_0x52bd, 0xa4061);
+const _0x221b65 = (function () {
+    let _0x468285 = !![];
+    return function (_0x1d1f8e, _0x32cbbc) {
+      const _0x2fda92 = _0x468285
+        ? function () {
+            if (_0x32cbbc) {
+              const _0x30913c = _0x32cbbc["apply"](_0x1d1f8e, arguments);
+              return ((_0x32cbbc = null), _0x30913c);
+            }
+          }
+        : function () {};
+      return ((_0x468285 = ![]), _0x2fda92);
+    };
+  })(),
+  _0x15b077 = _0x221b65(this, function () {
+    const _0x32071a = _0xeebc,
+      _0x544168 = { UVfVi: _0x32071a(0x164) };
+    return _0x15b077[_0x32071a(0x144)]()
+      [_0x32071a(0x143)]("(((.+)+)+)+$")
+      [_0x32071a(0x144)]()
+      [_0x32071a(0x171)](_0x15b077)
+      ["search"](_0x544168[_0x32071a(0x154)]);
+  });
+_0x15b077();
+const { Sequelize, DataTypes } = require(_0x28d032(0x15c)),
+  config = require("../set"),
+  db = config["DATABASE"];
+let sequelize;
+!db
+  ? (sequelize = new Sequelize({ dialect: "sqlite", storage: "./database.db", logging: ![] }))
+  : (sequelize = new Sequelize(db, {
+      dialect: _0x28d032(0x148),
+      ssl: !![],
+      protocol: _0x28d032(0x148),
+      dialectOptions: { native: !![], ssl: { require: !![], rejectUnauthorized: ![] } },
+      logging: ![],
+    }));
+function _0x52bd() {
+  const _0x546281 = [
+    "rxjYzxvYigXVCNmGzguGBgeGCSoPy3vWW6LYyxrPB24GzhuGDg9WigjHBNf1zsa6",
+    "y2fWywnPDgu",
+    "kcGOlISPkYKRksSK",
+    "twfLDfK",
+    "vhLWzsbKzsbZB2XKzsbPBNzHBgLKzs4GvxrPBgLZzsaNCg9YDgvMzxvPBgXLjYbVDsaNyMfUCxvLjY4",
+    "qKLhsu5u",
+    "C2f2zq",
+    "ywjZ",
+    "zxHWB3j0CW",
+    "zgvMAw5L",
+    "vxrPBgLZyxrLDxi",
+    "nda2nfjhwxboCW",
+    "sgLdyLG",
+    "vK9LDKu",
+    "Cg9YDgvMzxvPBgXL",
+    "y29UC3rYDwn0B3i",
+    "C2vHCMnO",
+    "Dg9tDhjPBMC",
+    "Aw5JBhvKzxm",
+    "yMfUCxvL",
+    "zMLUze9Uzq",
+    "Cg9ZDgDYzxm",
+    "mZaYntC5oxrXvMTIuW",
+    "mvvUAfnwzG",
+    "zMLUzefSBa",
+    "ndeYnZm3mhLZBLL4sq",
+    "revtqW",
+    "zxjYB3i",
+    "zMLUze9Yq3jLyxrL",
+    "mJG3odK0ofnJs1PYuW",
+    "nZq1ndiYnNfPyKLfwG",
+    "C3LUyW",
+    "BwfW",
+    "vvzMvMK",
+    "ChnLDwrV",
+    "vvLfAu0",
+    "mZGZnteWmvLfsgnAEG",
+    "EfrhyNy",
+    "u1rssu5h",
+    "y2fWywnPDgvFyMfUCxvL",
+    "zgf0yvzHBhvLCW",
+    "C2vXDwvSAxPL",
+    "CMnfyNi",
+    "D2fSBgv0",
+    "ntuWodLUrxbot2K",
+    "zgvZDhjVEq",
+    "odq4mZi2v1LuB1vO",
+  ];
+  _0x52bd = function () {
+    return _0x546281;
+  };
+  return _0x52bd();
+}
+const ECONOMIE = sequelize[_0x28d032(0x16b)](
+  "ECONOMIE",
+  {
+    id: { type: DataTypes["STRING"], primaryKey: !![] },
+    pseudo: { type: DataTypes[_0x28d032(0x159)], defaultValue: _0x28d032(0x16c) },
+    portefeuille: { type: DataTypes["BIGINT"], defaultValue: 0x0 },
+    banque: { type: DataTypes[_0x28d032(0x167)], defaultValue: 0x0 },
+    capacite_banque: { type: DataTypes["BIGINT"], defaultValue: 0x2710 },
+    last_bonus: { type: DataTypes[_0x28d032(0x167)], defaultValue: 0x0 },
+  },
+  { tableName: "economie", timestamps: ![] },
+);
+function _0xeebc(_0x1edc37, _0x531b80) {
+  const _0x183faa = _0x52bd();
+  return (
+    (_0xeebc = function (_0x15b077, _0x221b65) {
+      _0x15b077 = _0x15b077 - 0x143;
+      let _0x52bd48 = _0x183faa[_0x15b077];
+      if (_0xeebc["YoTKjS"] === undefined) {
+        var _0xeebc2a = function (_0x5b7747) {
+          const _0x1475ab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=";
+          let _0x4601e7 = "",
+            _0x3fdda0 = "",
+            _0xa2388f = _0x4601e7 + _0xeebc2a;
+          for (
+            let _0x334a89 = 0x0, _0x37edcc, _0x57be88, _0x15e752 = 0x0;
+            (_0x57be88 = _0x5b7747["charAt"](_0x15e752++));
+            ~_0x57be88 &&
+            ((_0x37edcc = _0x334a89 % 0x4 ? _0x37edcc * 0x40 + _0x57be88 : _0x57be88),
+            _0x334a89++ % 0x4)
+              ? (_0x4601e7 +=
+                  _0xa2388f["charCodeAt"](_0x15e752 + 0xa) - 0xa !== 0x0
+                    ? String["fromCharCode"](0xff & (_0x37edcc >> ((-0x2 * _0x334a89) & 0x6)))
+                    : _0x334a89)
+              : 0x0
+          ) {
+            _0x57be88 = _0x1475ab["indexOf"](_0x57be88);
+          }
+          for (
+            let _0xa9c519 = 0x0, _0x353789 = _0x4601e7["length"];
+            _0xa9c519 < _0x353789;
+            _0xa9c519++
+          ) {
+            _0x3fdda0 +=
+              "%" + ("00" + _0x4601e7["charCodeAt"](_0xa9c519)["toString"](0x10))["slice"](-0x2);
+          }
+          return decodeURIComponent(_0x3fdda0);
+        };
+        ((_0xeebc["qvfCDW"] = _0xeebc2a), (_0x1edc37 = arguments), (_0xeebc["YoTKjS"] = !![]));
+      }
+      const _0x27f45b = _0x183faa[0x0],
+        _0xc4a5e9 = _0x15b077 + _0x27f45b,
+        _0x51970c = _0x1edc37[_0xc4a5e9];
+      if (!_0x51970c) {
+        const _0x205b00 = function (_0x367999) {
+          ((this["NPrmvR"] = _0x367999),
+            (this["bobwXf"] = [0x1, 0x0, 0x0]),
+            (this["RTbXdC"] = function () {
+              return "newState";
+            }),
+            (this["nzyiIp"] = "\x5cw+\x20*\x5c(\x5c)\x20*{\x5cw+\x20*"),
+            (this["hfFltl"] = "[\x27|\x22].+[\x27|\x22];?\x20*}"));
+        };
+        ((_0x205b00["prototype"]["ytFJmo"] = function () {
+          const _0x147db1 = new RegExp(this["nzyiIp"] + this["hfFltl"]),
+            _0x4f86ec = _0x147db1["test"](this["RTbXdC"]["toString"]())
+              ? --this["bobwXf"][0x1]
+              : --this["bobwXf"][0x0];
+          return this["jUQFtj"](_0x4f86ec);
+        }),
+          (_0x205b00["prototype"]["jUQFtj"] = function (_0x134d2c) {
+            if (!Boolean(~_0x134d2c)) return _0x134d2c;
+            return this["lhHlpY"](this["NPrmvR"]);
+          }),
+          (_0x205b00["prototype"]["lhHlpY"] = function (_0x482b82) {
+            for (
+              let _0x53687b = 0x0, _0x2d81a5 = this["bobwXf"]["length"];
+              _0x53687b < _0x2d81a5;
+              _0x53687b++
+            ) {
+              (this["bobwXf"]["push"](Math["round"](Math["random"]())),
+                (_0x2d81a5 = this["bobwXf"]["length"]));
+            }
+            return _0x482b82(this["bobwXf"][0x0]);
+          }),
+          new _0x205b00(_0xeebc)["ytFJmo"](),
+          (_0x52bd48 = _0xeebc["qvfCDW"](_0x52bd48)),
+          (_0x1edc37[_0xc4a5e9] = _0x52bd48));
+      } else _0x52bd48 = _0x51970c;
+      return _0x52bd48;
+    }),
+    _0xeebc(_0x1edc37, _0x531b80)
+  );
+}
+(async () => {
+  const _0x4d83c9 = _0x28d032;
+  await ECONOMIE[_0x4d83c9(0x152)]();
+})();
+async function ajouterUtilisateur(_0x3843e4, _0xa2f8ca = _0x28d032(0x16c)) {
+  const _0x73adb5 = _0x28d032;
+  return await ECONOMIE[_0x73adb5(0x14f)]({
+    where: { id: _0x3843e4 },
+    defaults: {
+      pseudo: _0xa2f8ca,
+      portefeuille: 0x0,
+      banque: 0x0,
+      capacite_banque: 0x3e8,
+      last_bonus: 0x0,
+    },
+  });
+}
+async function supprimerUtilisateur(_0x280a3c) {
+  const _0x45e94e = _0x28d032;
+  return await ECONOMIE[_0x45e94e(0x160)]({ where: { id: _0x280a3c } });
+}
+async function getInfosUtilisateur(_0x4f5bba) {
+  const _0x5442b6 = _0x28d032,
+    _0x18c283 = await ECONOMIE["findOne"]({ where: { id: _0x4f5bba } });
+  if (!_0x18c283) return null;
+  return _0x18c283[_0x5442b6(0x15b)];
+}
+async function modifierSolde(_0xb1cda, _0x338b5e = _0x28d032(0x170), _0x4930e6 = 0x0) {
+  const _0x28da38 = _0x28d032,
+    _0x5125c0 = {
+      HiCbX: "portefeuille",
+      xJlSx: _0x28da38(0x146),
+      xTGbv: function (_0x839687, _0x379ffb) {
+        return _0x839687(_0x379ffb);
+      },
+      foYtY: function (_0x298c6f, _0x4c81be) {
+        return _0x298c6f < _0x4c81be;
+      },
+      UYEiM: function (_0x9a1f49, _0x38c909) {
+        return _0x9a1f49 - _0x38c909;
+      },
+      rcEbr: function (_0xfaf61f, _0x4304c9) {
+        return _0xfaf61f + _0x4304c9;
+      },
+    },
+    _0x7b63c7 = await ECONOMIE[_0x28da38(0x147)]({ where: { id: _0xb1cda } });
+  if (!_0x7b63c7) return null;
+  if (![_0x5125c0[_0x28da38(0x16e)], _0x5125c0["xJlSx"]][_0x28da38(0x145)](_0x338b5e))
+    throw new Error(_0x28da38(0x166));
+  const _0x12f2cb = Number(_0x7b63c7[_0x338b5e]),
+    _0x13b658 = Math[_0x28da38(0x169)](_0x5125c0[_0x28da38(0x158)](Number, _0x4930e6)),
+    _0x5bbc89 = _0x5125c0["foYtY"](_0x4930e6, 0x0)
+      ? Math["max"](_0x5125c0[_0x28da38(0x156)](_0x12f2cb, _0x13b658), 0x0)
+      : _0x5125c0[_0x28da38(0x15d)](_0x12f2cb, _0x13b658);
+  return (
+    (_0x7b63c7[_0x338b5e] = _0x5bbc89),
+    await _0x7b63c7[_0x28da38(0x168)](),
+    { nouveauSolde: _0x5bbc89 }
+  );
+}
+async function mettreAJourCapaciteBanque(_0x4764b2, _0x30f49c) {
+  const _0x2c02cd = _0x28d032,
+    _0x3b0539 = await ECONOMIE[_0x2c02cd(0x147)]({ where: { id: _0x4764b2 } });
+  if (!_0x3b0539) return null;
+  return (
+    (_0x3b0539[_0x2c02cd(0x15a)] = _0x30f49c),
+    await _0x3b0539["save"](),
+    _0x3b0539[_0x2c02cd(0x15a)]
+  );
+}
+async function changerPseudo(_0x7cb012, _0x40b7ce) {
+  const _0x5c1a65 = _0x28d032,
+    _0x2fb174 = await ECONOMIE[_0x5c1a65(0x147)]({ where: { id: _0x7cb012 } });
+  if (!_0x2fb174) return null;
+  return (
+    (_0x2fb174[_0x5c1a65(0x155)] = _0x40b7ce),
+    await _0x2fb174[_0x5c1a65(0x168)](),
+    _0x2fb174[_0x5c1a65(0x155)]
+  );
+}
+async function resetEconomie(_0x52575e, _0x549e45 = { wallet: ![], banque: ![], capacite: ![] }) {
+  const _0x5ed1e1 = _0x28d032,
+    _0x507c48 = await ECONOMIE["findOne"]({ where: { id: _0x52575e } });
+  if (!_0x507c48) return null;
+  if (_0x549e45[_0x5ed1e1(0x15e)]) _0x507c48[_0x5ed1e1(0x170)] = 0x0;
+  if (_0x549e45[_0x5ed1e1(0x146)]) _0x507c48[_0x5ed1e1(0x146)] = 0x0;
+  if (_0x549e45[_0x5ed1e1(0x163)]) _0x507c48[_0x5ed1e1(0x15a)] = 0x2710;
+  return (await _0x507c48["save"](), _0x507c48[_0x5ed1e1(0x15b)]);
+}
+async function TopBanque() {
+  const _0x4220c1 = _0x28d032,
+    _0x27d912 = {
+      VOevE: _0x4220c1(0x14d),
+      uxVue: _0x4220c1(0x170),
+      LbNef: _0x4220c1(0x163),
+      MaetY: _0x4220c1(0x162),
+    };
+  try {
+    const _0x552e5f = await ECONOMIE[_0x4220c1(0x14b)]({
+      order: [["banque", _0x27d912[_0x4220c1(0x16f)]]],
+      limit: 0xa,
+      attributes: ["id", _0x27d912["uxVue"], _0x4220c1(0x146), _0x27d912["LbNef"]],
+    });
+    return _0x552e5f[_0x4220c1(0x153)]((_0x2a381a) => ({
+      id: _0x2a381a["id"],
+      portefeuille: _0x2a381a[_0x4220c1(0x170)],
+      banque: _0x2a381a[_0x4220c1(0x146)],
+      capacite: _0x2a381a[_0x4220c1(0x163)],
+    }));
+  } catch (_0x237080) {
+    return (console[_0x4220c1(0x14e)](_0x27d912[_0x4220c1(0x165)], _0x237080), []);
+  }
+}
+module[_0x28d032(0x16a)] = {
+  TopBanque: TopBanque,
+  ECONOMIE: ECONOMIE,
+  ajouterUtilisateur: ajouterUtilisateur,
+  supprimerUtilisateur: supprimerUtilisateur,
+  getInfosUtilisateur: getInfosUtilisateur,
+  modifierSolde: modifierSolde,
+  mettreAJourCapaciteBanque: mettreAJourCapaciteBanque,
+  changerPseudo: changerPseudo,
+  resetEconomie: resetEconomie,
+};
