@@ -517,10 +517,10 @@ const protectionState = {
 // Commandes accessibles à TOUT LE MONDE (users normaux)
 const publicCommands = [
   // Général
-  "ping", "menu", "help", "info", "runtime", "uptime",
+  "ping", "menu", "help", "info", "runtime", "uptime", "alive",
   // Permissions (chacun peut voir son niveau)
   "permissions", "myaccess", "mylevel", "whoami",
-  // Fun
+  // Fun basique
   "sticker", "s", "toimg", "toimage",
   // Téléchargement basique
   "tiktok", "tt", "ytmp3", "ytmp4", "play", "song", "video",
@@ -532,9 +532,8 @@ const publicCommands = [
   "profil", "profile", "me", "level", "rank",
 ];
 
-// Commandes pour utilisateurs APPROUVÉS (approved)
-const approvedCommands = [
-  ...publicCommands,
+// Commandes pour utilisateurs APPROUVÉS (approved) - EXCLUSIVES (pas inclure public)
+const approvedOnlyCommands = [
   // Téléchargement avancé
   "ig", "instagram", "fb", "facebook", "twitter", "x",
   "pinterest", "pin", "spotify", "mediafire",
@@ -546,15 +545,20 @@ const approvedCommands = [
   "slot", "dice", "flip", "rps",
 ];
 
-// Commandes pour SUDO (admins de confiance)
-const sudoCommands = [
-  ...approvedCommands,
+// Toutes les commandes approved (pour compatibilité)
+const approvedCommands = [...publicCommands, ...approvedOnlyCommands];
+
+// Commandes pour SUDO (admins de confiance) - EXCLUSIVES (pas inclure approved)
+const sudoOnlyCommands = [
   // Groupe (modération)
   "kick", "add", "promote", "demote", "mute", "unmute",
   "hidetag", "tagall", "antilink", "antispam",
   // Outils avancés
   "broadcast", "bc",
 ];
+
+// Toutes les commandes sudo (pour compatibilité)
+const sudoCommands = [...approvedCommands, ...sudoOnlyCommands];
 
 // Commandes OWNER SEULEMENT (toi uniquement)
 const ownerOnlyCommands = [
@@ -1253,30 +1257,37 @@ async function handleCommand(hani, msg, db) {
   // 🔒 MODE PRIVATE: Seuls owner et sudo peuvent utiliser le bot
   if (config.MODE === "private" && !isSudo) {
     // Quelques commandes restent accessibles en mode private
-    const alwaysAllowed = ["permissions", "myaccess", "mylevel", "whoami", "ping"];
+    const alwaysAllowed = ["permissions", "myaccess", "mylevel", "whoami", "ping", "menu", "help"];
     if (!alwaysAllowed.includes(command)) {
       hasPermission = false;
       permissionDeniedReason = "🔒 *Mode Privé*\n\nLe bot est en mode privé. Seuls le propriétaire et les sudos peuvent l'utiliser.\n\nTape `.permissions` pour voir ton niveau.";
     }
   }
   // 🌍 MODE PUBLIC: Vérifier les niveaux d'accès
-  else if (ownerOnlyCommands.includes(command)) {
-    if (!isOwner) {
-      hasPermission = false;
-      permissionDeniedReason = "⛔ *Accès refusé!*\n\n👑 Cette commande est réservée au *propriétaire* du bot uniquement.";
-    }
-  } else if (sudoCommands.includes(command)) {
-    if (!isSudo) {
-      hasPermission = false;
-      permissionDeniedReason = "⛔ *Accès refusé!*\n\n🛡️ Cette commande est réservée aux *administrateurs* (sudo) du bot.";
-    }
-  } else if (approvedCommands.includes(command)) {
+  // ⚠️ IMPORTANT: Vérifier dans l'ordre du PLUS PERMISSIF au MOINS PERMISSIF
+  else if (publicCommands.includes(command)) {
+    // Commandes publiques → TOUJOURS accessible à tout le monde
+    hasPermission = true;
+  } else if (approvedOnlyCommands.includes(command)) {
+    // Commandes approved exclusives (jeux, téléchargement avancé, etc.)
     if (!isApproved) {
       hasPermission = false;
       permissionDeniedReason = "⛔ *Accès refusé!*\n\n✨ Cette commande est réservée aux *utilisateurs approuvés*.\n\nDemande au propriétaire de t'ajouter avec la commande: `.approve`";
     }
+  } else if (sudoOnlyCommands.includes(command)) {
+    // Commandes sudo exclusives (modération groupe, broadcast)
+    if (!isSudo) {
+      hasPermission = false;
+      permissionDeniedReason = "⛔ *Accès refusé!*\n\n🛡️ Cette commande est réservée aux *administrateurs* (sudo) du bot.";
+    }
+  } else if (ownerOnlyCommands.includes(command)) {
+    // Commandes owner seulement (contrôle total)
+    if (!isOwner) {
+      hasPermission = false;
+      permissionDeniedReason = "⛔ *Accès refusé!*\n\n👑 Cette commande est réservée au *propriétaire* du bot uniquement.";
+    }
   }
-  // publicCommands → toujours accessible
+  // Commandes non listées → accessibles par défaut
   
   // Si pas de permission, refuser
   if (!hasPermission) {
