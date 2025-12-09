@@ -233,6 +233,23 @@ class HaniDatabase {
     this.save();
   }
 
+  // Limitations utilisateurs
+  isLimited(jid) {
+    if (!this.data.limitedUsers) this.data.limitedUsers = {};
+    return !!this.data.limitedUsers[jid];
+  }
+
+  getLimitations(jid) {
+    if (!this.data.limitedUsers) this.data.limitedUsers = {};
+    return this.data.limitedUsers[jid] || null;
+  }
+
+  isCommandBlocked(jid, command) {
+    const limitations = this.getLimitations(jid);
+    if (!limitations) return false;
+    return limitations.blockedCommands?.includes(command) || false;
+  }
+
   // Sudo
   isSudo(jid) {
     return this.data.sudo.includes(jid);
@@ -991,6 +1008,16 @@ async function handleCommand(hani, msg, db) {
   // Vérifier si banni
   if (db.isBanned(sender)) {
     return; // Ignorer les utilisateurs bannis
+  }
+
+  // Vérifier si limité (commande bloquée)
+  if (db.isLimited(sender) && db.isCommandBlocked(sender, command)) {
+    const limitations = db.getLimitations(sender);
+    const levelNames = { 1: "Basique", 2: "Moyen", 3: "Strict" };
+    await hani.sendMessage(from, { 
+      text: `⚠️ *Accès Limité*\n\nVotre compte a des restrictions (Niveau ${limitations.level} - ${levelNames[limitations.level]}).\n\nCette commande (${command}) n'est pas disponible pour vous.\n\nCommandes autorisées: menu, help, ping` 
+    }, { quoted: msg });
+    return;
   }
 
   // Fonctions d'envoi
@@ -4053,6 +4080,8 @@ app.get("/api/admin/stats", async (req, res) => {
   try {
     const users = db.data.users || {};
     const userList = Object.entries(users);
+    const banned = db.data.banned || [];
+    const limited = db.data.limitedUsers || {};
     
     let mysqlStats = null;
     if (mysqlDB.isConnected()) {
@@ -4066,13 +4095,21 @@ app.get("/api/admin/stats", async (req, res) => {
         owners: userList.filter(([_, u]) => u.role === "owner").length,
         sudos: userList.filter(([_, u]) => u.role === "sudo").length,
         approved: userList.filter(([_, u]) => u.role === "approved").length,
+        banned: banned.length,
+        limited: Object.keys(limited).length,
         messages: db.data.stats?.messages || 0,
         commands: db.data.stats?.commands || 0,
-        users: userList.slice(0, 50).map(([jid, user]) => ({
-          jid: jid.split("@")[0],
+        users: userList.map(([jid, user]) => ({
+          jid: jid,
+          number: jid.split("@")[0],
           name: user.name || "Inconnu",
           role: user.role || "user",
-          messages: user.messageCount || 0
+          messages: user.messageCount || 0,
+          isBanned: banned.includes(jid),
+          isLimited: !!limited[jid],
+          limitations: limited[jid] || null,
+          lastSeen: user.lastSeen || null,
+          isBot: user.isBot || false
         }))
       },
       mysql: {
@@ -4091,6 +4128,164 @@ app.get("/api/admin/stats", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// 🚫 API pour BANNIR un utilisateur
+app.post("/api/admin/ban", (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+  
+  const { jid } = req.body;
+  if (!jid) return res.status(400).json({ error: "JID requis" });
+  
+  if (!db.data.banned) db.data.banned = [];
+  
+  if (!db.data.banned.includes(jid)) {
+    db.data.banned.push(jid);
+    db.save();
+    console.log(`[ADMIN] 🚫 Utilisateur banni: ${jid}`);
+  }
+  
+  res.json({ success: true, message: `${jid} a été banni` });
+});
+
+// ✅ API pour DÉBANNIR un utilisateur
+app.post("/api/admin/unban", (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+  
+  const { jid } = req.body;
+  if (!jid) return res.status(400).json({ error: "JID requis" });
+  
+  if (!db.data.banned) db.data.banned = [];
+  
+  const index = db.data.banned.indexOf(jid);
+  if (index > -1) {
+    db.data.banned.splice(index, 1);
+    db.save();
+    console.log(`[ADMIN] ✅ Utilisateur débanni: ${jid}`);
+  }
+  
+  res.json({ success: true, message: `${jid} a été débanni` });
+});
+
+// ⚠️ API pour LIMITER un utilisateur (restreindre commandes)
+app.post("/api/admin/limit", (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+  
+  const { jid, level } = req.body;
+  if (!jid) return res.status(400).json({ error: "JID requis" });
+  
+  if (!db.data.limitedUsers) db.data.limitedUsers = {};
+  
+  // Niveaux de limitation:
+  // 1 = Basique (menu, help seulement)
+  // 2 = Moyen (pas de téléchargement, pas d'IA)
+  // 3 = Strict (commandes fun seulement)
+  
+  db.data.limitedUsers[jid] = {
+    level: level || 1,
+    blockedCommands: getBlockedCommands(level || 1),
+    limitedAt: new Date().toISOString()
+  };
+  db.save();
+  
+  console.log(`[ADMIN] ⚠️ Utilisateur limité (niveau ${level}): ${jid}`);
+  res.json({ success: true, message: `${jid} limité au niveau ${level}` });
+});
+
+// Fonction pour obtenir les commandes bloquées par niveau
+function getBlockedCommands(level) {
+  const levels = {
+    1: ['owner', 'sudo', 'ban', 'unban', 'setowner', 'restart', 'eval', 'exec'],
+    2: ['owner', 'sudo', 'ban', 'unban', 'setowner', 'restart', 'eval', 'exec', 
+        'ytmp3', 'ytmp4', 'play', 'video', 'tiktok', 'insta', 'fb', 'twitter',
+        'gpt', 'ia', 'gemini', 'dalle', 'imagine'],
+    3: ['owner', 'sudo', 'ban', 'unban', 'setowner', 'restart', 'eval', 'exec',
+        'ytmp3', 'ytmp4', 'play', 'video', 'tiktok', 'insta', 'fb', 'twitter',
+        'gpt', 'ia', 'gemini', 'dalle', 'imagine', 'sticker', 'toimg',
+        'groupe', 'kick', 'add', 'promote', 'demote', 'antilink', 'antispam']
+  };
+  return levels[level] || levels[1];
+}
+
+// ✅ API pour RETIRER les limitations
+app.post("/api/admin/unlimit", (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+  
+  const { jid } = req.body;
+  if (!jid) return res.status(400).json({ error: "JID requis" });
+  
+  if (!db.data.limitedUsers) db.data.limitedUsers = {};
+  
+  if (db.data.limitedUsers[jid]) {
+    delete db.data.limitedUsers[jid];
+    db.save();
+    console.log(`[ADMIN] ✅ Limitations retirées: ${jid}`);
+  }
+  
+  res.json({ success: true, message: `Limitations retirées pour ${jid}` });
+});
+
+// 🗑️ API pour SUPPRIMER un utilisateur de la base
+app.post("/api/admin/delete", (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+  
+  const { jid } = req.body;
+  if (!jid) return res.status(400).json({ error: "JID requis" });
+  
+  // Ne pas supprimer le owner
+  if (db.data.users[jid]?.role === "owner") {
+    return res.status(403).json({ error: "Impossible de supprimer le owner" });
+  }
+  
+  if (db.data.users[jid]) {
+    delete db.data.users[jid];
+    db.save();
+    console.log(`[ADMIN] 🗑️ Utilisateur supprimé: ${jid}`);
+  }
+  
+  res.json({ success: true, message: `${jid} supprimé` });
+});
+
+// 👑 API pour changer le RÔLE d'un utilisateur
+app.post("/api/admin/role", (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+  
+  const { jid, role } = req.body;
+  if (!jid || !role) return res.status(400).json({ error: "JID et rôle requis" });
+  
+  const validRoles = ['user', 'approved', 'sudo', 'owner'];
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ error: "Rôle invalide" });
+  }
+  
+  if (!db.data.users[jid]) {
+    db.data.users[jid] = { name: "Inconnu", messageCount: 0 };
+  }
+  
+  db.data.users[jid].role = role;
+  db.save();
+  
+  console.log(`[ADMIN] 👑 Rôle changé: ${jid} → ${role}`);
+  res.json({ success: true, message: `${jid} est maintenant ${role}` });
+});
+
 // 🔐 PAGE ADMIN SÉCURISÉE - Code d'accès: 200700
 app.get("/admin", async (req, res) => {
   res.send(`
@@ -4099,7 +4294,7 @@ app.get("/admin", async (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🔐 HANI-MD Admin</title>
+  <title>🔐 HANI-MD Super Admin</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -4108,24 +4303,26 @@ app.get("/admin", async (req, res) => {
       min-height: 100vh;
       color: #fff;
     }
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
     .header {
       text-align: center;
-      padding: 30px 0;
+      padding: 20px 0;
       border-bottom: 2px solid rgba(255,255,255,0.1);
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
-    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    .header h1 { font-size: 2em; margin-bottom: 5px; }
     .header h1 span { color: #00d4ff; }
-    .header .status-indicator {
+    .status-indicator {
       display: inline-block;
       padding: 5px 15px;
       border-radius: 20px;
       font-size: 0.8em;
-      margin-top: 10px;
+      margin: 5px;
     }
     .status-online { background: #6bcb77; }
     .status-offline { background: #ff6b6b; }
+    
+    /* Login */
     .login-box {
       background: rgba(255,255,255,0.1);
       backdrop-filter: blur(10px);
@@ -4136,8 +4333,7 @@ app.get("/admin", async (req, res) => {
       text-align: center;
       border: 1px solid rgba(255,255,255,0.2);
     }
-    .login-box h2 { margin-bottom: 20px; font-size: 1.8em; }
-    .login-box p { margin-bottom: 20px; color: rgba(255,255,255,0.7); font-size: 0.9em; }
+    .login-box h2 { margin-bottom: 20px; }
     .login-box input {
       width: 100%;
       padding: 15px;
@@ -4145,7 +4341,7 @@ app.get("/admin", async (req, res) => {
       border-radius: 10px;
       font-size: 1.2em;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       background: rgba(255,255,255,0.9);
       color: #333;
       letter-spacing: 5px;
@@ -4155,31 +4351,566 @@ app.get("/admin", async (req, res) => {
       padding: 15px;
       border: none;
       border-radius: 10px;
-      font-size: 1.2em;
+      font-size: 1.1em;
       background: linear-gradient(135deg, #00d4ff, #0099cc);
       color: #fff;
       cursor: pointer;
-      transition: all 0.3s;
     }
-    .login-box button:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(0,212,255,0.4); }
-    .login-box button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .error-msg { color: #ff6b6b; margin-top: 15px; display: none; }
+    .error-msg { color: #ff6b6b; margin-top: 10px; display: none; }
     .dashboard { display: none; }
-    .refresh-info {
-      text-align: center;
-      padding: 10px;
-      background: rgba(0,212,255,0.2);
-      border-radius: 10px;
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
       margin-bottom: 20px;
-      font-size: 0.9em;
     }
-    .db-status {
+    .stat-card {
       background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+    }
+    .stat-card .emoji { font-size: 1.5em; }
+    .stat-card .number { font-size: 1.5em; font-weight: bold; color: #00d4ff; }
+    .stat-card .label { font-size: 0.75em; color: rgba(255,255,255,0.7); }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.2); }
+    .tab-btn.active { background: #00d4ff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* Users Table */
+    .users-section {
+      background: rgba(255,255,255,0.05);
       border-radius: 15px;
       padding: 20px;
-      margin-bottom: 30px;
+      overflow-x: auto;
+    }
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .search-box input {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .search-box input::placeholder { color: rgba(255,255,255,0.5); }
+    .filter-select {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    th { background: rgba(0,212,255,0.2); font-size: 0.85em; }
+    tr:hover { background: rgba(255,255,255,0.05); }
+    
+    .role-badge {
+      padding: 4px 10px;
+      border-radius: 15px;
+      font-size: 0.75em;
+      font-weight: bold;
+    }
+    .role-owner { background: #ff6b6b; }
+    .role-sudo { background: #ffd93d; color: #333; }
+    .role-approved { background: #6bcb77; }
+    .role-user { background: #4d96ff; }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-size: 0.7em;
+    }
+    .status-active { background: #6bcb77; }
+    .status-banned { background: #ff6b6b; }
+    .status-limited { background: #ffd93d; color: #333; }
+    
+    /* Action Buttons */
+    .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+    .action-btn {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.75em;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .action-btn:hover { transform: scale(1.05); }
+    .btn-ban { background: #ff6b6b; color: #fff; }
+    .btn-unban { background: #6bcb77; color: #fff; }
+    .btn-limit { background: #ffd93d; color: #333; }
+    .btn-unlimit { background: #4d96ff; color: #fff; }
+    .btn-delete { background: #333; color: #fff; }
+    .btn-role { background: #9c27b0; color: #fff; }
+    
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .quick-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: all 0.2s;
+    }
+    .quick-btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: #00d4ff; color: #fff; }
+    .btn-danger { background: #ff6b6b; color: #fff; }
+    .btn-success { background: #6bcb77; color: #fff; }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: #1a1a2e;
+      border-radius: 15px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
       border: 1px solid rgba(255,255,255,0.2);
+    }
+    .modal-content h3 { margin-bottom: 20px; }
+    .modal-content select, .modal-content input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-btns button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 10px;
+      color: #fff;
+      z-index: 2000;
+      animation: slideIn 0.3s;
+    }
+    .toast.success { background: #6bcb77; }
+    .toast.error { background: #ff6b6b; }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+      table { font-size: 0.8em; }
+      .action-btns { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 <span>HANI-MD</span> Super Admin</h1>
+      <div id="botStatus" class="status-indicator status-offline">⏳ Chargement...</div>
+    </div>
+    
+    <!-- Login -->
+    <div id="loginPage" class="login-box">
+      <h2>🔑 Accès Owner</h2>
+      <p style="color:rgba(255,255,255,0.6);margin-bottom:20px;font-size:0.9em">Zone réservée au propriétaire</p>
+      <input type="password" id="codeInput" placeholder="••••••" maxlength="6">
+      <button onclick="login()">🚀 Accéder</button>
+      <p id="errorMsg" class="error-msg">❌ Code incorrect</p>
+    </div>
+    
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button class="quick-btn btn-primary" onclick="refreshStats()">🔄 Actualiser</button>
+        <a href="/qr" class="quick-btn btn-success" style="text-decoration:none">📱 QR Code</a>
+        <button class="quick-btn btn-danger" onclick="logout()">🚪 Déconnexion</button>
+      </div>
+      
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="emoji">👥</div>
+          <div class="number" id="statUsers">0</div>
+          <div class="label">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="emoji">👑</div>
+          <div class="number" id="statOwners">0</div>
+          <div class="label">Owners</div>
+        </div>
+        <div class="stat-card">
+          <div class="emoji">⚡</div>
+          <div class="number" id="statSudos">0</div>
+          <div class="label">Sudos</div>
+        </div>
+        <div class="stat-card">
+          <div class="emoji">🚫</div>
+          <div class="number" id="statBanned">0</div>
+          <div class="label">Bannis</div>
+        </div>
+        <div class="stat-card">
+          <div class="emoji">⚠️</div>
+          <div class="number" id="statLimited">0</div>
+          <div class="label">Limités</div>
+        </div>
+        <div class="stat-card">
+          <div class="emoji">📨</div>
+          <div class="number" id="statMessages">0</div>
+          <div class="label">Messages</div>
+        </div>
+      </div>
+      
+      <!-- Users Management -->
+      <div class="users-section">
+        <h3 style="margin-bottom:15px">👥 Gestion des Utilisateurs</h3>
+        
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="🔍 Rechercher par numéro ou nom..." onkeyup="filterUsers()">
+          <select id="filterRole" class="filter-select" onchange="filterUsers()">
+            <option value="">Tous les rôles</option>
+            <option value="owner">👑 Owner</option>
+            <option value="sudo">⚡ Sudo</option>
+            <option value="approved">✅ Approved</option>
+            <option value="user">👤 User</option>
+          </select>
+          <select id="filterStatus" class="filter-select" onchange="filterUsers()">
+            <option value="">Tous les statuts</option>
+            <option value="active">✅ Actifs</option>
+            <option value="banned">🚫 Bannis</option>
+            <option value="limited">⚠️ Limités</option>
+          </select>
+        </div>
+        
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>📱 Numéro</th>
+                <th>👤 Nom</th>
+                <th>🎭 Rôle</th>
+                <th>📊 Statut</th>
+                <th>💬 Msgs</th>
+                <th>⚡ Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="6" style="text-align:center;padding:30px">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal Limitation -->
+  <div id="limitModal" class="modal">
+    <div class="modal-content">
+      <h3>⚠️ Limiter l'utilisateur</h3>
+      <p id="limitUserName" style="margin-bottom:15px;color:#aaa"></p>
+      <select id="limitLevel">
+        <option value="1">Niveau 1 - Basique (menu, help seulement)</option>
+        <option value="2">Niveau 2 - Pas de téléchargement ni IA</option>
+        <option value="3">Niveau 3 - Commandes fun uniquement</option>
+      </select>
+      <div class="modal-btns">
+        <button onclick="closeModal()" style="background:#666;color:#fff">Annuler</button>
+        <button onclick="confirmLimit()" style="background:#ffd93d;color:#333">Appliquer</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal Rôle -->
+  <div id="roleModal" class="modal">
+    <div class="modal-content">
+      <h3>👑 Changer le rôle</h3>
+      <p id="roleUserName" style="margin-bottom:15px;color:#aaa"></p>
+      <select id="newRole">
+        <option value="user">👤 User - Accès normal</option>
+        <option value="approved">✅ Approved - Accès vérifié</option>
+        <option value="sudo">⚡ Sudo - Accès étendu</option>
+        <option value="owner">👑 Owner - Accès total</option>
+      </select>
+      <div class="modal-btns">
+        <button onclick="closeModal()" style="background:#666;color:#fff">Annuler</button>
+        <button onclick="confirmRole()" style="background:#9c27b0;color:#fff">Appliquer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let adminToken = localStorage.getItem('hani_admin_token');
+    let allUsers = [];
+    let currentUserJid = null;
+    
+    window.onload = function() {
+      if (adminToken) checkSession();
+      document.getElementById('codeInput').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+    };
+    
+    async function login() {
+      const code = document.getElementById('codeInput').value;
+      const errorMsg = document.getElementById('errorMsg');
+      errorMsg.style.display = 'none';
+      
+      try {
+        const res = await fetch('/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          adminToken = data.token;
+          localStorage.setItem('hani_admin_token', adminToken);
+          showDashboard();
+        } else {
+          errorMsg.style.display = 'block';
+          document.getElementById('codeInput').value = '';
+        }
+      } catch (e) {
+        errorMsg.textContent = '❌ Erreur de connexion';
+        errorMsg.style.display = 'block';
+      }
+    }
+    
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/admin/check', { headers: { 'X-Admin-Token': adminToken } });
+        const data = await res.json();
+        if (data.valid) showDashboard();
+        else { localStorage.removeItem('hani_admin_token'); adminToken = null; }
+      } catch (e) { localStorage.removeItem('hani_admin_token'); adminToken = null; }
+    }
+    
+    function showDashboard() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      refreshStats();
+    }
+    
+    function logout() {
+      fetch('/admin/logout', { method: 'POST', headers: { 'X-Admin-Token': adminToken } });
+      localStorage.removeItem('hani_admin_token');
+      adminToken = null;
+      location.reload();
+    }
+    
+    async function refreshStats() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers: { 'X-Admin-Token': adminToken } });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        if (!data.success) return;
+        
+        // Bot status
+        const botStatus = document.getElementById('botStatus');
+        botStatus.className = 'status-indicator ' + (data.bot.connected ? 'status-online' : 'status-offline');
+        botStatus.textContent = data.bot.connected ? '🟢 Bot Connecté' : '🔴 Déconnecté';
+        
+        // Stats
+        document.getElementById('statUsers').textContent = data.local.totalUsers;
+        document.getElementById('statOwners').textContent = data.local.owners;
+        document.getElementById('statSudos').textContent = data.local.sudos;
+        document.getElementById('statBanned').textContent = data.local.banned || 0;
+        document.getElementById('statLimited').textContent = data.local.limited || 0;
+        document.getElementById('statMessages').textContent = data.local.messages;
+        
+        // Users
+        allUsers = data.local.users || [];
+        renderUsers(allUsers);
+        
+      } catch (e) { console.error('Erreur:', e); }
+    }
+    
+    function renderUsers(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px">Aucun utilisateur</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = users.map(u => {
+        let statusBadge = '<span class="status-badge status-active">✅ Actif</span>';
+        if (u.isBanned) statusBadge = '<span class="status-badge status-banned">🚫 Banni</span>';
+        else if (u.isLimited) statusBadge = '<span class="status-badge status-limited">⚠️ Limité</span>';
+        
+        let actions = '';
+        if (u.role !== 'owner') {
+          if (u.isBanned) {
+            actions += '<button class="action-btn btn-unban" onclick="unbanUser(\\'' + u.jid + '\\')">✅ Débannir</button>';
+          } else {
+            actions += '<button class="action-btn btn-ban" onclick="banUser(\\'' + u.jid + '\\')">🚫 Bannir</button>';
+          }
+          
+          if (u.isLimited) {
+            actions += '<button class="action-btn btn-unlimit" onclick="unlimitUser(\\'' + u.jid + '\\')">🔓 Délimiter</button>';
+          } else {
+            actions += '<button class="action-btn btn-limit" onclick="openLimitModal(\\'' + u.jid + '\\', \\'' + u.name + '\\')">⚠️ Limiter</button>';
+          }
+          
+          actions += '<button class="action-btn btn-role" onclick="openRoleModal(\\'' + u.jid + '\\', \\'' + u.name + '\\', \\'' + u.role + '\\')">👑</button>';
+          actions += '<button class="action-btn btn-delete" onclick="deleteUser(\\'' + u.jid + '\\')">🗑️</button>';
+        } else {
+          actions = '<span style="color:#6bcb77;font-size:0.8em">👑 Owner protégé</span>';
+        }
+        
+        return '<tr>' +
+          '<td>' + u.number + '</td>' +
+          '<td>' + u.name + (u.isBot ? ' 🤖' : '') + '</td>' +
+          '<td><span class="role-badge role-' + u.role + '">' + u.role + '</span></td>' +
+          '<td>' + statusBadge + '</td>' +
+          '<td>' + u.messages + '</td>' +
+          '<td><div class="action-btns">' + actions + '</div></td>' +
+          '</tr>';
+      }).join('');
+    }
+    
+    function filterUsers() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const roleFilter = document.getElementById('filterRole').value;
+      const statusFilter = document.getElementById('filterStatus').value;
+      
+      let filtered = allUsers.filter(u => {
+        const matchSearch = u.number.includes(search) || u.name.toLowerCase().includes(search);
+        const matchRole = !roleFilter || u.role === roleFilter;
+        let matchStatus = true;
+        if (statusFilter === 'banned') matchStatus = u.isBanned;
+        else if (statusFilter === 'limited') matchStatus = u.isLimited;
+        else if (statusFilter === 'active') matchStatus = !u.isBanned && !u.isLimited;
+        return matchSearch && matchRole && matchStatus;
+      });
+      
+      renderUsers(filtered);
+    }
+    
+    async function banUser(jid) {
+      if (!confirm('Bannir cet utilisateur ?')) return;
+      await apiAction('/api/admin/ban', { jid });
+    }
+    
+    async function unbanUser(jid) {
+      await apiAction('/api/admin/unban', { jid });
+    }
+    
+    function openLimitModal(jid, name) {
+      currentUserJid = jid;
+      document.getElementById('limitUserName').textContent = name + ' (' + jid.split('@')[0] + ')';
+      document.getElementById('limitModal').classList.add('show');
+    }
+    
+    async function confirmLimit() {
+      const level = document.getElementById('limitLevel').value;
+      await apiAction('/api/admin/limit', { jid: currentUserJid, level: parseInt(level) });
+      closeModal();
+    }
+    
+    async function unlimitUser(jid) {
+      await apiAction('/api/admin/unlimit', { jid });
+    }
+    
+    function openRoleModal(jid, name, currentRole) {
+      currentUserJid = jid;
+      document.getElementById('roleUserName').textContent = name + ' (' + jid.split('@')[0] + ')';
+      document.getElementById('newRole').value = currentRole;
+      document.getElementById('roleModal').classList.add('show');
+    }
+    
+    async function confirmRole() {
+      const role = document.getElementById('newRole').value;
+      await apiAction('/api/admin/role', { jid: currentUserJid, role });
+      closeModal();
+    }
+    
+    async function deleteUser(jid) {
+      if (!confirm('Supprimer définitivement cet utilisateur ?')) return;
+      await apiAction('/api/admin/delete', { jid });
+    }
+    
+    async function apiAction(url, body) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        showToast(data.message || (data.success ? 'Succès!' : 'Erreur'), data.success ? 'success' : 'error');
+        if (data.success) refreshStats();
+      } catch (e) {
+        showToast('Erreur de connexion', 'error');
+      }
+    }
+    
+    function closeModal() {
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
+      currentUserJid = null;
+    }
+    
+    function showToast(msg, type) {
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // Auto-refresh toutes les 30s
+    setInterval(refreshStats, 30000);
+  </script>
+</body>
+</html>
+  \`);
+});
+
+// Health check pour Render
     }
     .db-status h3 { margin-bottom: 15px; }
     .status-badge {
