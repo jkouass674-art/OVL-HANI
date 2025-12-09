@@ -3067,11 +3067,45 @@ async function startBot() {
       qrState.connectionStatus = "connected";
       qrState.currentQR = null;
       qrState.qrDataURL = null;
+      
+      const botNumber = hani.user?.id?.split(":")[0] || "";
+      const botName = hani.user?.name || "HANI-MD";
+      const botJid = botNumber + "@s.whatsapp.net";
+      
       qrState.botInfo = {
-        name: hani.user?.name || "HANI-MD",
-        number: hani.user?.id?.split(":")[0] || "",
+        name: botName,
+        number: botNumber,
+        jid: botJid,
         connectedAt: new Date().toISOString()
       };
+      
+      // 🔐 ENREGISTRER LE OWNER (celui qui a scanné le QR)
+      if (botNumber) {
+        // Définir comme NUMERO_OWNER si pas déjà défini
+        if (!config.NUMERO_OWNER || config.NUMERO_OWNER === "") {
+          config.NUMERO_OWNER = botNumber;
+          console.log(`[OWNER] 👑 Owner auto-défini: ${botNumber}`);
+        }
+        
+        // Enregistrer dans la base de données comme owner
+        if (!db.data.users[botJid]) {
+          db.data.users[botJid] = {
+            name: botName,
+            role: "owner",
+            messageCount: 0,
+            firstSeen: new Date().toISOString(),
+            lastSeen: new Date().toISOString(),
+            isBot: true
+          };
+        } else {
+          db.data.users[botJid].role = "owner";
+          db.data.users[botJid].name = botName;
+          db.data.users[botJid].isBot = true;
+        }
+        db.save();
+        console.log(`[DB] 👑 Owner enregistré: ${botName} (${botNumber})`);
+      }
+      
       reconnectAttempts = 0;
       
       // Sauvegarder immédiatement après connexion réussie
@@ -4637,7 +4671,13 @@ app.post("/api/mysql-test", async (req, res) => {
 });
 
 // API pour obtenir l'état du QR (pour AJAX)
+// 🔒 API QR Status - PROTÉGÉE (nécessite token admin)
 app.get("/api/qr-status", (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+  
   res.json({
     status: qrState.connectionStatus,
     isConnected: qrState.isConnected,
@@ -4649,7 +4689,7 @@ app.get("/api/qr-status", (req, res) => {
   });
 });
 
-// 📱 PAGE QR CODE PRINCIPALE - AVEC REFRESH AUTOMATIQUE 60s
+// 📱 PAGE QR CODE - SÉCURISÉE (Owner uniquement)
 app.get("/qr", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -4657,7 +4697,7 @@ app.get("/qr", (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HANI-MD - Scanner QR Code</title>
+  <title>🔐 HANI-MD - QR Code Privé</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
