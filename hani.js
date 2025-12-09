@@ -507,7 +507,7 @@ const protectionState = {
   autoViewOnce: true,         // Photos/Vidéos vue unique → envoyées à Moi-même
   autoViewOnceAudio: true,    // Vocaux écoute unique → envoyés à Moi-même
   autoSaveStatus: true,       // Tous les statuts → sauvegardés automatiquement
-  antibot: true,              // Bloquer les autres bots WhatsApp
+  // antibot désactivé - plus de blocage automatique des bots
   spyStatusViews: true,       // 👁️ Voir qui regarde mes statuts (même si désactivé)
   spyReadReceipts: true,      // 📖 Notifications lecture messages ACTIVÉ
   spyReplies: true,           // 🔔 Notifier quand quelqu'un répond (preuve de lecture!)
@@ -633,9 +633,8 @@ const ownerOnlyCommands = [
   // Gestion utilisateurs
   "ban", "unban", "sudo", "delsudo", "addsudo", "removesudo", "sudolist",
   "approve", "unapprove", "approved", "addapprove", "removeapprove", "delapprove", "approvelist", "approvedlist",
-  "blockedbots", "blockbot", "unblockbot",
   // Protections
-  "antidelete", "anticall", "antibot", "viewonce", "audioonce", "savestatus",
+  "antidelete", "anticall", "viewonce", "audioonce", "savestatus",
   "protection", "antideletestatus",
   // Blocage WhatsApp
   "block", "unblock", "bloquer", "debloquer",
@@ -651,27 +650,8 @@ const ownerOnlyCommands = [
 // Liste des utilisateurs approuvés
 const approvedUsers = new Set();
 
-// 🤖 PATTERNS POUR DÉTECTER LES BOTS
-const botPatterns = [
-  /╭━━.*bot.*╮/i,
-  /┃.*bot\s*name/i,
-  /┃.*owner\s*:/i,
-  /┃.*prefix\s*:/i,
-  /┃.*uptime\s*:/i,
-  /┃.*mode\s*:\s*\*(public|private)\*/i,
-  /╰━━.*━━┈⊷/i,
-  /powered\s*by/i,
-  /at\s*your\s*service/i,
-  /\.menu|\.help|\.allmenu/i,
-  /bot\s*v\d|version\s*:\s*\*?\d/i,
-  /ʙᴏᴛ\s*ɴᴀᴍᴇ/i,
-  /ᴏᴡɴᴇʀ\s*:/i,
-  /ᴘʀᴇғɪx\s*:/i,
-  /ᴜᴘᴛɪᴍᴇ\s*:/i,
-];
-
-// Liste des bots bloqués (numéros)
-const blockedBots = new Set();
+// 🤖 DÉTECTION BOT DÉSACTIVÉE
+// La détection automatique et le blocage des bots sont désactivés
 
 // ═══════════════════════════════════════════════════════════
 // 💾 STOCKAGE EN MÉMOIRE
@@ -1905,62 +1885,6 @@ NUMERO_OWNER=...,...,${senderNumber}` : "✅ Tu es bien reconnu comme OWNER!"}
       else protectionState.antidelete = !protectionState.antidelete;
       
       return send(`🗑️ Antidelete ${protectionState.antidelete ? "✅ activé" : "❌ désactivé"}`);
-    }
-
-    // ────────── ANTI-BOT ──────────
-    case "antibot": {
-      const param = args.toLowerCase();
-      if (param === "on") protectionState.antibot = true;
-      else if (param === "off") protectionState.antibot = false;
-      else protectionState.antibot = !protectionState.antibot;
-      
-      return send(`🤖 Anti-Bot ${protectionState.antibot ? "✅ activé (autres bots bloqués)" : "❌ désactivé"}`);
-    }
-
-    case "blockedbots":
-    case "listbots": {
-      if (blockedBots.size === 0) return send("📭 Aucun bot bloqué.");
-      
-      let list = "🤖 *Bots bloqués*\n━━━━━━━━━━━━━━━━━━━━━\n\n";
-      let i = 1;
-      for (const bot of blockedBots) {
-        list += `${i}. ${formatPhoneNumber(bot.split("@")[0])}\n`;
-        i++;
-      }
-      list += `\n💡 Pour débloquer: *.unblockbot <numéro>*`;
-      return send(list);
-    }
-
-    case "unblockbot": {
-      if (!args) return send("❌ Usage: .unblockbot <numéro>\nExemple: .unblockbot 2250710070612");
-      
-      const numToUnblock = args.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-      
-      if (blockedBots.has(numToUnblock)) {
-        blockedBots.delete(numToUnblock);
-        try {
-          await hani.updateBlockStatus(numToUnblock, "unblock");
-          return send(`✅ Bot ${formatPhoneNumber(args.replace(/[^0-9]/g, ""))} débloqué!`);
-        } catch (e) {
-          return send(`⚠️ Retiré de la liste mais erreur déblocage WhatsApp: ${e.message}`);
-        }
-      } else {
-        return send(`❌ Ce numéro n'est pas dans la liste des bots bloqués.`);
-      }
-    }
-
-    case "blockbot": {
-      if (!args) return send("❌ Usage: .blockbot <numéro>\nExemple: .blockbot 2250710070612");
-      
-      const numToBlock = args.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-      blockedBots.add(numToBlock);
-      
-      try {
-        await hani.updateBlockStatus(numToBlock, "block");
-        return send(`🤖 Bot ${formatPhoneNumber(args.replace(/[^0-9]/g, ""))} bloqué!`);
-      } catch (e) {
-        return send(`⚠️ Ajouté à la liste mais erreur blocage WhatsApp: ${e.message}`);
-      }
     }
 
     case "deleted":
@@ -4190,71 +4114,7 @@ _Preuve qu'elle a LU ton message!_ ✅`
         });
       }
       
-      // ═══════════════════════════════════════════════════════════
-      // 🤖 PROTECTION ANTI-BOT - Bloquer les autres bots WhatsApp
-      // ═══════════════════════════════════════════════════════════
-      if (protectionState.antibot && !msg.key.fromMe && from !== "status@broadcast") {
-        // Extraire le texte du message
-        const msgContent = msg.message?.conversation || 
-                          msg.message?.extendedTextMessage?.text ||
-                          msg.message?.imageMessage?.caption ||
-                          msg.message?.videoMessage?.caption || "";
-        
-        // Vérifier si c'est un message de bot
-        let isBotMessage = false;
-        let matchedPattern = "";
-        
-        for (const pattern of botPatterns) {
-          if (pattern.test(msgContent)) {
-            isBotMessage = true;
-            matchedPattern = pattern.toString();
-            break;
-          }
-        }
-        
-        // Détection supplémentaire: messages très stylisés avec caractères spéciaux
-        const hasStylizedChars = /[╭╮╰╯┃┏┓┗┛━─│├┤┬┴┼]/g.test(msgContent);
-        const hasManySpecialChars = (msgContent.match(/[✮✦✧★☆⭐🌟💫✨]/g) || []).length > 3;
-        const hasMenuStructure = /menu|allmenu|ᴍᴇɴᴜ/i.test(msgContent) && hasStylizedChars;
-        
-        if (!isBotMessage && hasMenuStructure && hasManySpecialChars) {
-          isBotMessage = true;
-          matchedPattern = "Menu structure + styled chars";
-        }
-        
-        // Si le numéro est déjà connu comme bot
-        if (blockedBots.has(sender)) {
-          isBotMessage = true;
-          matchedPattern = "Previously identified bot";
-        }
-        
-        if (isBotMessage) {
-          console.log(`\n[BOT] ------------------------------------------`);
-          console.log(`[BOT] BOT DÉTECTÉ ET BLOQUÉ!`);
-          console.log(`[BOT] Numéro: ${sender?.split("@")[0]}`);
-          console.log(`[BOT] Pattern: ${matchedPattern}`);
-          console.log(`[BOT] ------------------------------------------\n`);
-          
-          // Ajouter à la liste des bots bloqués
-          blockedBots.add(sender);
-          
-          // Notifier le owner
-          const botNumber = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
-          const alertMsg = `🤖 *BOT DÉTECTÉ ET BLOQUÉ!*\n━━━━━━━━━━━━━━━━━━━━━\n\n📱 *Numéro:* ${formatPhoneNumber(sender.split("@")[0])}\n👤 *Nom:* ${senderName}\n🔍 *Pattern:* ${matchedPattern}\n🕐 *Heure:* ${new Date().toLocaleString("fr-FR")}\n\n⚠️ Ce numéro est maintenant bloqué.\n\n💡 Pour débloquer: *.unblockbot ${sender.split("@")[0]}*`;
-          
-          await hani.sendMessage(botNumber, { text: alertMsg });
-          
-          // Bloquer le contact sur WhatsApp
-          try {
-            await hani.updateBlockStatus(sender, "block");
-            console.log(`[OK] Bot ${sender.split("@")[0]} bloqué sur WhatsApp`);
-          } catch (e) {
-            console.log(`[!] Erreur blocage: ${e.message}`);
-          }
-          
-          return; // Ne pas traiter le message plus loin
-        }
-      }
+      // 🤖 PROTECTION ANTI-BOT DÉSACTIVÉE
       
       // ═══════════════════════════════════════════════════════════
       // 👁️ INTERCEPTION AUTOMATIQUE DES VUES UNIQUES (Photos/Vidéos/Vocaux)
