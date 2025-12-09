@@ -508,6 +508,70 @@ const protectionState = {
   autoViewOnceAudio: true,    // Vocaux écoute unique → envoyés à Moi-même
   autoSaveStatus: true,       // Tous les statuts → sauvegardés automatiquement
   antibot: true,              // Bloquer les autres bots WhatsApp
+  spyStatusViews: true,       // 👁️ Voir qui regarde mes statuts (même si désactivé)
+  spyReadReceipts: true,      // 📖 Notifications lecture messages ACTIVÉ
+  spyReplies: true,           // 🔔 Notifier quand quelqu'un répond (preuve de lecture!)
+  spyPresence: true,          // 👀 Détecter qui ouvre ma discussion (en ligne/tape)
+};
+
+// Stockage des vues de statuts et lectures
+const spyData = {
+  statusViews: [],      // { viewer, viewerName, timestamp }
+  messageReads: [],     // { reader, readerName, timestamp }
+  replies: [],          // { replier, replierName, timestamp, preview } - Réponses reçues
+  pendingMessages: {},  // Messages envoyés en attente de lecture { jid: timestamp }
+  presenceDetected: [], // { jid, name, type, timestamp } - Présences détectées
+  lastPresenceNotif: {}, // Anti-spam: dernière notification par JID
+  maxEntries: 100,       // Garder les 100 derniers
+  presenceCooldown: {}   // Cooldown pour éviter spam
+};
+
+// 📇 FONCTION pour détecter si c'est un LID (Linked ID) et pas un vrai numéro
+const isLID = (number) => {
+  if (!number) return true;
+  const clean = String(number).replace(/[^0-9]/g, '');
+  // Les LID sont généralement très longs (> 14 chiffres)
+  // Les vrais numéros ont généralement 10-14 chiffres
+  if (clean.length > 14) return true;
+  // Si c'est un JID avec @lid
+  if (String(number).includes("@lid")) return true;
+  return false;
+};
+
+// 📇 FONCTION pour extraire un vrai numéro depuis un JID
+const extractRealNumber = (jid) => {
+  if (!jid) return null;
+  // Si c'est un LID, on ne peut pas avoir le vrai numéro
+  if (String(jid).includes("@lid")) return null;
+  // Extraire le numéro avant @s.whatsapp.net
+  const num = String(jid).split("@")[0].split(":")[0];
+  if (isLID(num)) return null;
+  return num;
+};
+
+// 📇 FONCTION GLOBALE pour formater un numéro de téléphone joliment
+const formatPhoneForDisplay = (number) => {
+  if (!number) return "Inconnu";
+  const clean = String(number).replace(/[^0-9]/g, '');
+  
+  // Vérifier si c'est un LID (pas un vrai numéro)
+  if (isLID(clean)) {
+    return "❌ LID (pas un vrai numéro)";
+  }
+  
+  // Côte d'Ivoire: +225 XX XX XX XX XX
+  if (clean.length === 12 && clean.startsWith("225")) {
+    return `+225 ${clean.slice(3,5)} ${clean.slice(5,7)} ${clean.slice(7,9)} ${clean.slice(9,11)} ${clean.slice(11)}`;
+  } 
+  // France: +33 X XX XX XX XX
+  else if (clean.length === 11 && clean.startsWith("33")) {
+    return `+33 ${clean.slice(2,3)} ${clean.slice(3,5)} ${clean.slice(5,7)} ${clean.slice(7,9)} ${clean.slice(9)}`;
+  } 
+  // Autre pays (numéro valide)
+  else if (clean.length >= 10 && clean.length <= 14) {
+    return `+${clean.slice(0,3)} ${clean.slice(3,6)} ${clean.slice(6,9)} ${clean.slice(9)}`;
+  }
+  return `+${clean}`;
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -581,7 +645,7 @@ const ownerOnlyCommands = [
   "test", "debug", "clearsession",
   // Surveillance (tes fonctionnalités privées)
   "deleted", "delmsg", "deletedstatus", "delstatus", "statusdel",
-  "vv", "viewonce", "getstatus", "spy", "track", "activity",
+  "vv", "viewonce", "getstatus", "spy", "track", "activity", "invisible",
 ];
 
 // Liste des utilisateurs approuvés
@@ -830,11 +894,12 @@ function isValidPhoneNumber(num) {
 // Cache pour stocker les noms des contacts
 const contactNamesCache = new Map();
 
-// Stocker le nom d'un contact
+// Stocker le nom d'un contact (accepte les numéros ET les LID)
 function cacheContactName(jid, name) {
   if (jid && name && name.length > 1) {
     const num = jid.split("@")[0];
-    if (isValidPhoneNumber(num)) {
+    // Accepter les numéros de téléphone valides OU les LID (identifiants internes WhatsApp)
+    if (num && (isValidPhoneNumber(num) || /^\d{10,20}$/.test(num))) {
       contactNamesCache.set(num, name);
     }
   }
@@ -847,7 +912,7 @@ function getCachedContactName(jid) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// 🎨 MENUS ET TEXTES
+// 🎨 MENUS ET TEXTES (SIMPLIFIÉ)
 // ═══════════════════════════════════════════════════════════
 
 function getMainMenu(prefix, userRole = "user") {
@@ -868,40 +933,24 @@ function getMainMenu(prefix, userRole = "user") {
 ┃ ${prefix}menu - Ce menu
 ┃ ${prefix}ping - Tester le bot
 ┃ ${prefix}info - Infos du bot
-┃ ${prefix}stats - Statistiques
-┃ ${prefix}runtime - Temps en ligne
 ┃ ${prefix}whoami - Qui suis-je?
-┃ ${prefix}permissions - Voir ton niveau
-┃
-┃ 👤 *TON PROFIL*
-┃ ${prefix}profil - Voir ton profil
-┃ ${prefix}level - Ton niveau XP
-┃ ${prefix}daily - Bonus quotidien
-┃
-┃ 🎲 *FUN BASIQUE*
-┃ ${prefix}dice - Lancer un dé
-┃ ${prefix}flip - Pile ou face
-┃ ${prefix}quote - Citation random
 ┃
 ┃ 🔧 *OUTILS*
+┃ ${prefix}sticker - Créer sticker
 ┃ ${prefix}calc [expression] - Calculer
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━━ 🔒 *ACCÈS LIMITÉ* ━━━╮
 ┃
-┃ ❌ Stickers, IA, Downloads
 ┃ ❌ Commandes de groupe
-┃ ❌ Fonctions avancées
+┃ ❌ Protections du bot
+┃ ❌ Vue unique / Anti-delete
 ┃
 ┃ 💡 *Pour plus d'accès:*
 ┃ Demande à l'owner de t'approuver!
-┃ Commande: ${prefix}approve @toi
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
-📊 *Hiérarchie des rôles:*
-👑 Owner > ⚡ Sudo > ✅ Approved > 👤 User
 `;
   }
   
@@ -922,44 +971,17 @@ function getMainMenu(prefix, userRole = "user") {
 ┃ ${prefix}menu - Ce menu
 ┃ ${prefix}ping - Tester le bot
 ┃ ${prefix}info - Infos du bot
-┃ ${prefix}stats - Statistiques
-┃ ${prefix}runtime - Temps en ligne
 ┃ ${prefix}whoami - Qui suis-je?
-┃ ${prefix}permissions - Voir ton niveau
-┃
-┃ 👤 *TON PROFIL*
-┃ ${prefix}profil - Voir ton profil
-┃ ${prefix}level - Ton niveau XP
-┃ ${prefix}daily - Bonus quotidien
-┃
-┃ 🎮 *FUN*
-┃ ${prefix}sticker - Créer sticker
-┃ ${prefix}emoji [😀] - Agrandir emoji
-┃ ${prefix}dice - Lancer un dé
-┃ ${prefix}flip - Pile ou face
-┃ ${prefix}quote - Citation random
 ┃
 ┃ 🔧 *OUTILS*
+┃ ${prefix}sticker - Créer sticker
 ┃ ${prefix}calc [expression] - Calculer
-┃ ${prefix}tts [texte] - Text to Speech
-┃ ${prefix}tr [lang] [texte] - Traduire
-┃
-┃ 🤖 *INTELLIGENCE ARTIFICIELLE*
-┃ ${prefix}gpt [question] - ChatGPT
-┃ ${prefix}dalle [description] - Image IA
-┃
-┃ 📥 *TÉLÉCHARGEMENTS*
-┃ ${prefix}play [titre] - Musique YouTube
-┃ ${prefix}video [titre] - Vidéo YouTube
-┃ ${prefix}tiktok [lien] - TikTok
-┃ ${prefix}insta [lien] - Instagram
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━━ 🔒 *NON DISPONIBLE* ━━━╮
 ┃ ❌ Commandes de groupe (admin)
 ┃ ❌ Protections du bot
-┃ ❌ Gestion utilisateurs
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
 `;
   }
@@ -978,22 +1000,12 @@ function getMainMenu(prefix, userRole = "user") {
 ╭━━━ ⚡ *MENU SUDO* ━━━╮
 ┃
 ┃ 📌 *GÉNÉRAL*
-┃ ${prefix}ping, ${prefix}info, ${prefix}stats
-┃ ${prefix}runtime, ${prefix}whoami
+┃ ${prefix}ping, ${prefix}info, ${prefix}whoami
 ┃
-┃ 👤 *PROFIL*
-┃ ${prefix}profil, ${prefix}level, ${prefix}daily
+┃ 🔧 *OUTILS*
+┃ ${prefix}sticker, ${prefix}calc
 ┃
-┃ 🎮 *FUN & OUTILS*
-┃ ${prefix}sticker, ${prefix}emoji, ${prefix}dice
-┃ ${prefix}flip, ${prefix}quote, ${prefix}calc
-┃ ${prefix}tts, ${prefix}tr
-┃
-┃ 🤖 *IA & DOWNLOADS*
-┃ ${prefix}gpt, ${prefix}dalle
-┃ ${prefix}play, ${prefix}video, ${prefix}tiktok
-┃
-┃ 👥 *GROUPE* (Tu peux!)
+┃ 👥 *GROUPE*
 ┃ ${prefix}kick @user - Exclure
 ┃ ${prefix}add [n°] - Ajouter
 ┃ ${prefix}promote/@demote - Gérer admins
@@ -1004,16 +1016,14 @@ function getMainMenu(prefix, userRole = "user") {
 ┃
 ┃ 👑 *GESTION USERS*
 ┃ ${prefix}approve/@unapprove - Approuver
-┃ ${prefix}approved - Liste approuvés
 ┃ ${prefix}ban/@unban - Bannir
-┃ ${prefix}banlist - Liste bannis
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━━ 🔒 *RÉSERVÉ OWNER* ━━━╮
 ┃ ❌ ${prefix}sudo, ${prefix}delsudo
 ┃ ❌ Protections avancées
-┃ ❌ ${prefix}broadcast, ${prefix}restart
+┃ ❌ Vue unique / Anti-delete
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
 `;
   }
@@ -1030,91 +1040,57 @@ function getMainMenu(prefix, userRole = "user") {
 
 ╭━━━ 👑 *MENU OWNER COMPLET* ━━━╮
 ┃
-┃ 📌 *GÉNÉRAL* (Tous)
+┃ 📌 *GÉNÉRAL*
 ┃ ${prefix}ping - Tester le bot
 ┃ ${prefix}info - Infos du bot
 ┃ ${prefix}stats - Statistiques
-┃ ${prefix}runtime - Temps en ligne
 ┃ ${prefix}whoami - Qui suis-je?
 ┃
-┃ 👤 *UTILISATEUR* (Tous)
-┃ ${prefix}profil - Ton profil
-┃ ${prefix}level - Ton niveau
-┃ ${prefix}daily - Bonus quotidien
-┃
-┃ 🎮 *FUN* (Approuvés)
+┃ 🔧 *OUTILS*
 ┃ ${prefix}sticker - Créer sticker
-┃ ${prefix}emoji [😀] - Agrandir emoji
-┃ ${prefix}dice - Lancer un dé
-┃ ${prefix}flip - Pile ou face
-┃ ${prefix}quote - Citation random
+┃ ${prefix}calc [expression] - Calculer
 ┃
-┃ 🔧 *OUTILS* (Approuvés)
-┃ ${prefix}calc [expression]
-┃ ${prefix}tts [texte] - Text to Speech
-┃ ${prefix}tr [lang] [texte] - Traduire
-┃ ${prefix}gpt [question] - ChatGPT
-┃ ${prefix}dalle [description] - Image IA
-┃
-┃ 👥 *GROUPE* (Admins/Sudo)
+┃ 👥 *GROUPE*
 ┃ ${prefix}kick @user - Exclure
-┃ ${prefix}add 2250000 - Ajouter
-┃ ${prefix}promote @user - Promouvoir
-┃ ${prefix}demote @user - Rétrograder
+┃ ${prefix}add [n°] - Ajouter
+┃ ${prefix}promote/@demote - Gérer admins
 ┃ ${prefix}link - Lien du groupe
-┃ ${prefix}desc [texte] - Description
 ┃ ${prefix}tagall - Mentionner tous
 ┃ ${prefix}hidetag [msg] - Tag caché
 ┃
-┃ 🛡️ *PROTECTIONS* (Owner)
+┃ 🛡️ *PROTECTIONS*
 ┃ ${prefix}antilink on/off
 ┃ ${prefix}antispam on/off
 ┃ ${prefix}antibot on/off
-┃ ${prefix}antitag on/off
-┃ ${prefix}mute on/off
 ┃ ${prefix}warn @user - Avertir
-┃ ${prefix}unwarn @user - Retirer warn
 ┃ ${prefix}warnlist - Liste warns
 ┃
-┃ 👁️ *VUE UNIQUE* (Owner)
+┃ 👁️ *VUE UNIQUE*
 ┃ ${prefix}vv - Récupérer (répondre)
 ┃ ${prefix}listvv - Liste interceptées
 ┃ ${prefix}viewonce on/off
-┃ ${prefix}audioonce on/off
 ┃
-┃ 🗑️ *ANTI-DELETE* (Owner)
+┃ 🗑️ *ANTI-DELETE*
 ┃ ${prefix}antidelete on/off
 ┃ ${prefix}deleted - Voir supprimés
 ┃
-┃ 📸 *STATUTS / STORIES* (Owner)
-┃ ${prefix}savestatus on/off - Auto-save
-┃ ${prefix}deletedstatus - Statuts supprimés
-┃ ${prefix}getstatus [n°] - Récupérer statut
-┃ ${prefix}liststatus - Tous les statuts
-┃ ${prefix}allstatus - Télécharger tous
+┃ 📸 *STATUTS*
+┃ ${prefix}savestatus on/off
+┃ ${prefix}liststatus - Liste statuts
+┃ ${prefix}getstatus [n°] - Récupérer
 ┃
-┃ 👑 *GESTION UTILISATEURS* (Owner)
-┃ ${prefix}approve @user - Approuver
-┃ ${prefix}unapprove @user - Retirer
-┃ ${prefix}approved - Liste approuvés
-┃ ${prefix}sudo @user - Ajouter sudo
-┃ ${prefix}delsudo @user - Retirer sudo
-┃ ${prefix}sudolist - Liste sudos
-┃ ${prefix}ban @user - Bannir
-┃ ${prefix}unban @user - Débannir
-┃ ${prefix}banlist - Liste bannis
+┃ 👑 *GESTION USERS*
+┃ ${prefix}approve/@unapprove
+┃ ${prefix}sudo/@delsudo
+┃ ${prefix}ban/@unban
 ┃ ${prefix}mode public/private
 ┃
-┃ 🔒 *BLOCAGE* (Owner)
-┃ ${prefix}block [n°] - Bloquer contact
-┃ ${prefix}unblock [n°] - Débloquer
-┃ ${prefix}blockedbots - Bots bloqués
-┃
-┃ ⚙️ *SYSTÈME* (Owner)
-┃ ${prefix}broadcast [msg] - Diffuser
-┃ ${prefix}setowner [n°] - Définir owner
+┃ ⚙️ *SYSTÈME*
+┃ ${prefix}broadcast [msg]
 ┃ ${prefix}restart - Redémarrer
-┃ ${prefix}protection - Voir protections
+┃ ${prefix}invisible off/on - Visibilité
+┃ ${prefix}spy - Qui voit/lit mes msgs
+┃ ${prefix}protection - État protections
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
@@ -1147,10 +1123,11 @@ async function handleCommand(hani, msg, db) {
   
   // Vérification owner avec plusieurs formats
   const senderNumber = extractNumber(sender);
-  const ownerNumber = config.NUMERO_OWNER.replace(/[^0-9]/g, "");
+  // NE PAS supprimer les virgules ici ! On garde la chaîne originale pour split
+  const ownerNumberRaw = config.NUMERO_OWNER || "";
   
   // Debug pour TOUTES les commandes owner
-  console.log(`[CMD: ${command}] Sender: ${senderNumber} | Owner: ${ownerNumber} | Bot: ${botNumberClean}`);
+  console.log(`[CMD: ${command}] Sender: ${senderNumber} | Owners: ${ownerNumberRaw} | Bot: ${botNumberClean}`);
   
   // 🔐 ENREGISTREMENT AUTOMATIQUE DES NOUVEAUX UTILISATEURS
   // Tout nouvel utilisateur est enregistré comme "user" par défaut
@@ -1166,16 +1143,32 @@ async function handleCommand(hani, msg, db) {
     console.log(`[DB] 👤 Nouvel utilisateur enregistré: ${pushName} (${senderNumber}) - Role: user`);
   }
   
-  // Vérification STRICTE pour owner:
+  // Vérification TRÈS SOUPLE pour owner:
   // Les NUMERO_OWNER dans .env sont owners (peut être plusieurs séparés par virgule)
   // Le numéro du bot LUI-MÊME peut aussi exécuter des commandes owner (pour le chat "Moi-même")
-  const ownerNumbers = ownerNumber.split(',').map(n => n.trim().replace(/[^0-9]/g, ''));
-  const isOwner = ownerNumbers.some(owner => 
-    senderNumber === owner || 
-    senderNumber.endsWith(owner) || 
-    owner.endsWith(senderNumber) ||
-    sender === formatNumber(owner)
-  );
+  const ownerNumbers = ownerNumberRaw.split(',').map(n => n.trim().replace(/[^0-9]/g, '')).filter(n => n.length > 0);
+  
+  // Fonction pour vérifier si deux numéros correspondent (même partiellement)
+  const numbersMatch = (num1, num2) => {
+    if (!num1 || !num2) return false;
+    const clean1 = num1.replace(/[^0-9]/g, '');
+    const clean2 = num2.replace(/[^0-9]/g, '');
+    if (clean1 === clean2) return true;
+    // Les 6 derniers chiffres correspondent (pour les LIDs)
+    if (clean1.length >= 6 && clean2.length >= 6) {
+      if (clean1.slice(-6) === clean2.slice(-6)) return true;
+    }
+    // Fin de l'un contient l'autre
+    if (clean1.endsWith(clean2) || clean2.endsWith(clean1)) return true;
+    // Les 9 derniers chiffres (numéro standard sans indicatif)
+    if (clean1.length >= 9 && clean2.length >= 9) {
+      if (clean1.slice(-9) === clean2.slice(-9)) return true;
+    }
+    return false;
+  };
+  
+  const isOwner = ownerNumbers.some(owner => numbersMatch(senderNumber, owner));
+  console.log(`[OWNER CHECK] Sender: ${senderNumber} | Owners: ${ownerNumbers.join(',')} | isOwner: ${isOwner}`);
   
   // Le bot peut s'envoyer des commandes à lui-même (chat "Moi-même") 
   // SEULEMENT si fromMe ET que c'est dans le chat du bot
@@ -1213,7 +1206,27 @@ async function handleCommand(hani, msg, db) {
   const sendHere = (text) => hani.sendMessage(from, { text });
   const isOwnChat = from === botNumber;
   const send = isOwnChat ? sendHere : sendPrivate;
-  const reply = (text) => hani.sendMessage(from, { text }, { quoted: msg });
+  
+  // Déterminer la bonne destination pour reply
+  // Si c'est un LID (@lid), on envoie au botNumber (chat "Moi-même")
+  // Si c'est un groupe ou un numéro normal, on envoie au from
+  const isLidChat = from.endsWith('@lid');
+  const replyDestination = isLidChat ? botNumber : from;
+  const reply = async (text) => {
+    try {
+      await hani.sendMessage(replyDestination, { text }, { quoted: msg });
+    } catch (e) {
+      console.log(`[ERR] Erreur envoi reply à ${replyDestination}: ${e.message}`);
+      // Fallback: essayer d'envoyer à botNumber
+      if (replyDestination !== botNumber) {
+        try {
+          await hani.sendMessage(botNumber, { text });
+        } catch (e2) {
+          console.log(`[ERR] Fallback aussi échoué: ${e2.message}`);
+        }
+      }
+    }
+  };
 
   // Récupérer le groupe
   const groupData = isGroupMsg ? db.getGroup(from) : null;
@@ -1313,8 +1326,18 @@ async function handleCommand(hani, msg, db) {
 
     case "whoami": {
       const senderNum = extractNumber(sender);
-      const ownerNum = config.NUMERO_OWNER.replace(/[^0-9]/g, "");
       const botNum = botNumberClean;
+      
+      // Afficher tous les numéros owner
+      const allOwnerNumbers = config.NUMERO_OWNER.split(',').map(n => n.trim());
+      const cleanOwnerNumbers = allOwnerNumbers.map(n => n.replace(/[^0-9]/g, ''));
+      
+      // Vérification détaillée
+      const matchDetails = cleanOwnerNumbers.map(owner => {
+        const exactMatch = senderNumber === owner;
+        const endsWithMatch = senderNumber.endsWith(owner) || owner.endsWith(senderNumber);
+        return `• ${owner} ${exactMatch ? "✅ EXACT" : endsWithMatch ? "✅ PARTIEL" : "❌ NON"}`;
+      }).join('\n┃ ');
       
       const info = `
 ╭━━━ 🔍 *QUI SUIS-JE ?* ━━━╮
@@ -1322,14 +1345,17 @@ async function handleCommand(hani, msg, db) {
 ┃ 📱 *Sender JID:*
 ┃ ${sender}
 ┃
-┃ 📞 *Ton numéro:*
-┃ ${senderNum}
+┃ 📞 *Ton numéro (extrait):*
+┃ ${senderNumber}
 ┃
 ┃ 🤖 *Numéro du bot:*
 ┃ ${botNum}
 ┃
-┃ 👑 *Owner (.env):*
-┃ ${ownerNum}
+┃ 👑 *Owners dans .env:*
+┃ ${allOwnerNumbers.join(', ')}
+┃
+┃ 🔍 *Correspondance:*
+┃ ${matchDetails}
 ┃
 ┃ 🔑 *fromMe:*
 ┃ ${msg.key.fromMe ? "OUI" : "NON"}
@@ -1338,13 +1364,20 @@ async function handleCommand(hani, msg, db) {
 ┃ ✅ *Es-tu owner ?*
 ┃ ${isOwner ? "OUI ✓" : "NON ✗"}
 ┃
+┃ 🛡️ *Es-tu sudo ?*
+┃ ${isSudo ? "OUI ✓" : "NON ✗"}
+┃
+┃ ✅ *Es-tu approuvé ?*
+┃ ${isApproved ? "OUI ✓" : "NON ✗"}
+┃
+┃ 🏷️ *Ton rôle:*
+┃ ${userRole.toUpperCase()}
+┃
 ╰━━━━━━━━━━━━━━━━━━━━━━╯
 
 ${!isOwner ? `⚠️ *Pour te définir comme owner:*
-Modifie .env avec:
-NUMERO_OWNER=${senderNum}
-
-Ou utilise: .setowner ${senderNum}` : "✅ Tu es bien reconnu comme owner!"}
+Modifie .env et ajoute ton numéro:
+NUMERO_OWNER=...,...,${senderNumber}` : "✅ Tu es bien reconnu comme OWNER!"}
       `.trim();
       
       return reply(info);
@@ -1422,57 +1455,6 @@ Ou utilise: .setowner ${senderNum}` : "✅ Tu es bien reconnu comme owner!"}
     case "uptime": {
       const uptime = formatUptime(Date.now() - db.data.stats.startTime);
       return send(`⏱️ *Temps en ligne*\n\n🤖 HANI-MD fonctionne depuis: *${uptime}*`);
-    }
-
-    // ────────── UTILISATEUR ──────────
-    case "profil":
-    case "profile":
-    case "me": {
-      const user = db.getUser(sender);
-      const xpNeeded = user.level * 100;
-      const progress = Math.round((user.xp / xpNeeded) * 10);
-      const progressBar = "█".repeat(progress) + "░".repeat(10 - progress);
-      
-      return send(`
-👤 *Ton Profil*
-
-📛 Nom: ${pushName}
-📱 Numéro: ${extractNumber(sender)}
-⭐ Niveau: ${user.level}
-✨ XP: ${user.xp}/${xpNeeded}
-💬 Messages: ${user.messages}
-
-📊 Progression:
-[${progressBar}] ${progress * 10}%
-`);
-    }
-
-    case "level":
-    case "lvl":
-    case "rank": {
-      const user = db.getUser(sender);
-      const xpNeeded = user.level * 100;
-      return send(`⭐ *Niveau: ${user.level}*\n✨ XP: ${user.xp}/${xpNeeded}\n💬 Messages: ${user.messages}`);
-    }
-
-    case "daily":
-    case "bonus": {
-      const user = db.getUser(sender);
-      const now = Date.now();
-      const lastDaily = user.lastDaily || 0;
-      const dayMs = 24 * 60 * 60 * 1000;
-      
-      if (now - lastDaily < dayMs) {
-        const remaining = formatUptime(dayMs - (now - lastDaily));
-        return send(`⏰ Tu as déjà réclamé ton bonus!\n⏳ Reviens dans: ${remaining}`);
-      }
-      
-      const bonus = Math.floor(Math.random() * 50) + 50; // 50-100 XP
-      user.xp += bonus;
-      user.lastDaily = now;
-      db.save();
-      
-      return send(`🎁 *Bonus quotidien!*\n\n✨ +${bonus} XP\n⭐ Total XP: ${user.xp}`);
     }
 
     // ────────── GROUPE ──────────
@@ -2265,34 +2247,6 @@ Si la personne a masqué sa photo pour tous,
       return;
     }
 
-    case "dice":
-    case "de": {
-      const result = Math.floor(Math.random() * 6) + 1;
-      const diceEmojis = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-      return reply(`🎲 Le dé affiche: ${diceEmojis[result - 1]} *${result}*`);
-    }
-
-    case "flip":
-    case "coinflip": {
-      const result = Math.random() < 0.5 ? "Pile 🪙" : "Face 👑";
-      return reply(`🪙 Résultat: *${result}*`);
-    }
-
-    case "quote":
-    case "citation": {
-      const quotes = [
-        "La vie est ce qui arrive quand on est occupé à faire d'autres plans. - John Lennon",
-        "Sois le changement que tu veux voir dans le monde. - Gandhi",
-        "L'imagination est plus importante que le savoir. - Einstein",
-        "La simplicité est la sophistication suprême. - Léonard de Vinci",
-        "Le succès c'est d'aller d'échec en échec sans perdre son enthousiasme. - Churchill",
-        "La seule façon de faire du bon travail est d'aimer ce que vous faites. - Steve Jobs",
-        "Ce n'est pas la force, mais la persévérance, qui fait les grandes œuvres. - Samuel Johnson",
-        "Le plus grand risque est de ne prendre aucun risque. - Mark Zuckerberg"
-      ];
-      return reply(`💭 *Citation du jour*\n\n"${quotes[Math.floor(Math.random() * quotes.length)]}"`);
-    }
-
     // ────────── OUTILS ──────────
     case "calc":
     case "calculate": {
@@ -2486,10 +2440,317 @@ Si la personne a masqué sa photo pour tous,
       process.exit(0);
     }
 
+    // ────────── 👻 PRÉSENCE / INVISIBILITÉ ──────────
+    case "invisible":
+    case "presence":
+    case "online": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const param = args?.toLowerCase();
+      
+      if (param === "off" || param === "invisible" || param === "hide") {
+        // Devenir invisible (offline)
+        await hani.sendPresenceUpdate("unavailable");
+        return send(`👻 *Mode INVISIBLE activé!*
+
+✅ Tu n'apparais plus "en ligne" sur WhatsApp.
+• Les autres ne voient pas quand tu es connecté
+• Tu peux toujours envoyer/recevoir des messages
+
+💡 Utilise \`.invisible on\` pour redevenir visible.`);
+      } else if (param === "on" || param === "visible" || param === "show") {
+        // Redevenir visible (online)
+        await hani.sendPresenceUpdate("available");
+        return send(`👁️ *Mode VISIBLE activé!*
+
+✅ Tu apparais maintenant "en ligne" normalement.
+
+💡 Utilise \`.invisible off\` pour devenir invisible.`);
+      } else {
+        return send(`👻 *Gestion de la présence*
+
+*Usage:*
+• \`.invisible off\` - Devenir invisible
+• \`.invisible on\` - Redevenir visible
+
+*États possibles:*
+• *Invisible:* Personne ne te voit en ligne
+• *Visible:* Présence normale sur WhatsApp
+
+💡 Par défaut, le bot démarre en mode invisible.`);
+      }
+    }
+
+    // ────────── 🕵️ ESPIONNAGE: QUI VOIT/LIT ──────────
+    case "spy":
+    case "espion":
+    case "viewers":
+    case "stalkers": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const param = args?.toLowerCase();
+      
+      // Fonction locale pour formater le numéro
+      const formatNum = (num) => {
+        if (!num) return "Inconnu";
+        const clean = num.replace(/[^0-9]/g, '');
+        if (clean.length === 12 && clean.startsWith("225")) {
+          return `+225 ${clean.slice(3,5)} ${clean.slice(5,7)} ${clean.slice(7,9)} ${clean.slice(9,11)} ${clean.slice(11)}`;
+        } else if (clean.length >= 10) {
+          return `+${clean.slice(0,3)} ${clean.slice(3,6)} ${clean.slice(6,9)} ${clean.slice(9)}`;
+        }
+        return `+${clean}`;
+      };
+      
+      if (param === "status" || param === "statuts" || param === "vues") {
+        // Afficher qui a vu les statuts
+        if (spyData.statusViews.length === 0) {
+          return send(`👁️ *Aucune vue de statut enregistrée*
+
+_Poste un statut et attends que quelqu'un le regarde!_`);
+        }
+        
+        let list = `👁️ ═══════════════════════════
+    *QUI A VU TES STATUTS*
+═══════════════════════════\n\n`;
+        const uniqueViewers = {};
+        
+        // Compter les vues par personne
+        for (const view of spyData.statusViews) {
+          if (!uniqueViewers[view.viewer]) {
+            uniqueViewers[view.viewer] = { name: view.viewerName, count: 0, lastTime: view.timeStr };
+          }
+          uniqueViewers[view.viewer].count++;
+        }
+        
+        let i = 1;
+        for (const [num, data] of Object.entries(uniqueViewers)) {
+          const displayName = data.name || "Non enregistré";
+          list += `*${i}.* ${displayName !== "Non enregistré" ? `*${displayName}*` : "_Contact inconnu_"}
+   📱 *Numéro:* ${formatNum(num)}
+   🔢 *Brut:* ${num}
+   👁️ ${data.count} vue(s) • 🕐 ${data.lastTime}
+   💬 wa.me/${num}\n\n`;
+          i++;
+          if (i > 15) break;
+        }
+        
+        list += `═══════════════════════════
+📊 *Total:* ${spyData.statusViews.length} vues de ${uniqueViewers ? Object.keys(uniqueViewers).length : 0} personnes`;
+        return send(list);
+        
+      } else if (param === "messages" || param === "read" || param === "lu") {
+        // Afficher qui a lu les messages
+        if (spyData.messageReads.length === 0) {
+          return send(`📖 *Aucune lecture enregistrée*
+
+_Envoie des messages et attends qu'ils soient lus!_`);
+        }
+        
+        let list = `📖 ═══════════════════════════
+    *QUI A LU TES MESSAGES*
+═══════════════════════════\n\n`;
+        const uniqueReaders = {};
+        
+        // Compter les lectures par personne
+        for (const read of spyData.messageReads) {
+          if (!uniqueReaders[read.reader]) {
+            uniqueReaders[read.reader] = { name: read.readerName, count: 0, lastTime: read.timeStr };
+          }
+          uniqueReaders[read.reader].count++;
+        }
+        
+        let i = 1;
+        for (const [num, data] of Object.entries(uniqueReaders)) {
+          const displayName = data.name || "Non enregistré";
+          list += `*${i}.* ${displayName !== "Non enregistré" ? `*${displayName}*` : "_Contact inconnu_"}
+   📱 *Numéro:* ${formatNum(num)}
+   🔢 *Brut:* ${num}
+   📖 ${data.count} msg lu(s) • 🕐 ${data.lastTime}
+   💬 wa.me/${num}\n\n`;
+          i++;
+          if (i > 15) break;
+        }
+        
+        list += `═══════════════════════════
+📊 *Total:* ${spyData.messageReads.length} lectures de ${uniqueReaders ? Object.keys(uniqueReaders).length : 0} personnes`;
+        return send(list);
+        
+      } else if (param === "on") {
+        protectionState.spyStatusViews = true;
+        protectionState.spyReadReceipts = true;
+        protectionState.spyReplies = true;
+        protectionState.spyPresence = true;
+        return send(`🕵️ *MODE ESPION ACTIVÉ* ✅
+
+Tu recevras des notifications quand:
+• 👁️ Quelqu'un voit tes statuts
+• 📖 Quelqu'un lit tes messages (si activé chez lui)
+• ↩️ Quelqu'un RÉPOND à tes messages (PREUVE!)
+• 💬 Quelqu'un t'écrit après ton message (PREUVE!)
+• ✍️ Quelqu'un est en train d'ÉCRIRE dans ton chat!
+• 🎤 Quelqu'un ENREGISTRE un vocal pour toi!
+
+💡 \`.spy off\` pour désactiver`);
+        
+      } else if (param === "off") {
+        protectionState.spyStatusViews = false;
+        protectionState.spyReadReceipts = false;
+        protectionState.spyReplies = false;
+        protectionState.spyPresence = false;
+        return send(`🕵️ *MODE ESPION DÉSACTIVÉ* ❌
+
+Plus de notifications de vues/lectures/présence.
+
+💡 \`.spy on\` pour réactiver`);
+        
+      } else if (param === "clear" || param === "reset") {
+        spyData.statusViews = [];
+        spyData.messageReads = [];
+        spyData.replies = [];
+        spyData.pendingMessages = {};
+        spyData.presenceDetected = [];
+        spyData.presenceCooldown = {};
+        return send(`🗑️ *Historique effacé*
+
+✅ Toutes les données de vues, lectures, réponses et présences supprimées.`);
+        
+      } else if (param === "presence" || param === "presences" || param === "actifs") {
+        // Afficher qui a été détecté actif dans le chat
+        if (!spyData.presenceDetected || spyData.presenceDetected.length === 0) {
+          return send(`✍️ *Aucune présence détectée*
+
+_Attends que quelqu'un ouvre ta discussion et commence à écrire!_
+
+💡 Ce système détecte quand quelqu'un:
+• ✍️ Est en train d'écrire dans ton chat
+• 🎤 Enregistre un vocal pour toi
+• 👁️ Est actif/en ligne dans ta discussion`);
+        }
+        
+        let list = `✍️ ═══════════════════════════
+    *QUI A OUVERT TON CHAT*
+═══════════════════════════\n\n`;
+        const uniquePresences = {};
+        
+        // Compter les présences par personne
+        for (const presence of spyData.presenceDetected) {
+          if (!uniquePresences[presence.number]) {
+            uniquePresences[presence.number] = { 
+              name: presence.name, 
+              count: 0, 
+              actions: new Set(),
+              lastTime: new Date(presence.timestamp).toLocaleString("fr-FR")
+            };
+          }
+          uniquePresences[presence.number].count++;
+          uniquePresences[presence.number].actions.add(presence.action);
+        }
+        
+        let i = 1;
+        for (const [num, data] of Object.entries(uniquePresences)) {
+          const displayName = data.name || "Non enregistré";
+          const actionsStr = Array.from(data.actions).map(a => {
+            switch(a) {
+              case "composing": return "✍️";
+              case "recording": return "🎤";
+              case "available": return "👁️";
+              default: return "📱";
+            }
+          }).join("");
+          list += `*${i}.* ${displayName !== "Non enregistré" && displayName !== "Inconnu" ? `*${displayName}*` : "_Contact inconnu_"}
+   📱 *Numéro:* ${formatNum(num)}
+   ${actionsStr} ${data.count} détection(s) • 🕐 ${data.lastTime}
+   💬 wa.me/${num}\n\n`;
+          i++;
+          if (i > 15) break;
+        }
+        
+        list += `═══════════════════════════
+📊 *Total:* ${spyData.presenceDetected.length} détections de ${Object.keys(uniquePresences).length} personnes
+
+*Légende:*
+✍️ = En train d'écrire
+🎤 = Enregistre un vocal
+👁️ = Actif dans le chat`;
+        return send(list);
+        
+      } else {
+        // Résumé par défaut
+        const statusCount = spyData.statusViews.length;
+        const readCount = spyData.messageReads.length;
+        const repliesCount = spyData.replies?.length || 0;
+        const presenceCount = spyData.presenceDetected?.length || 0;
+        const uniqueStatusViewers = new Set(spyData.statusViews.map(v => v.viewer)).size;
+        const uniqueReadersCount = new Set(spyData.messageReads.map(r => r.reader)).size;
+        const uniquePresenceCount = new Set((spyData.presenceDetected || []).map(p => p.number)).size;
+        
+        // Dernières personnes
+        let lastViewers = "";
+        let lastReaders = "";
+        let lastPresences = "";
+        
+        if (spyData.statusViews.length > 0) {
+          const last3 = spyData.statusViews.slice(0, 3);
+          lastViewers = last3.map(v => {
+            const name = v.viewerName || "Inconnu";
+            return `• ${name} (${formatNum(v.viewer)})`;
+          }).join("\n");
+        }
+        
+        if (spyData.messageReads.length > 0) {
+          const last3 = spyData.messageReads.slice(0, 3);
+          lastReaders = last3.map(r => {
+            const name = r.readerName || "Inconnu";
+            const method = r.confirmedBy ? ` [${r.confirmedBy}]` : "";
+            return `• ${name} (${formatNum(r.reader)})${method}`;
+          }).join("\n");
+        }
+        
+        if (spyData.presenceDetected && spyData.presenceDetected.length > 0) {
+          const last3 = spyData.presenceDetected.slice(-3).reverse();
+          lastPresences = last3.map(p => {
+            const name = p.name || "Inconnu";
+            const actionEmoji = p.action === "composing" ? "✍️" : p.action === "recording" ? "🎤" : "👁️";
+            return `• ${actionEmoji} ${name} (${formatNum(p.number)})`;
+          }).join("\n");
+        }
+        
+        return send(`🕵️ ═══════════════════════════
+      *MODE ESPION*
+═══════════════════════════
+
+📊 *STATISTIQUES:*
+👁️ *Vues statuts:* ${statusCount} (${uniqueStatusViewers} personnes)
+📖 *Messages lus:* ${readCount} (${uniqueReadersCount} personnes)
+↩️ *Réponses reçues:* ${repliesCount}
+✍️ *Présences détectées:* ${presenceCount} (${uniquePresenceCount} personnes)
+
+${lastViewers ? `🔍 *Dernières vues statuts:*\n${lastViewers}\n` : ""}
+${lastReaders ? `📖 *Dernières lectures confirmées:*\n${lastReaders}\n` : ""}
+${lastPresences ? `✍️ *Derniers actifs dans ton chat:*\n${lastPresences}\n` : ""}
+⚙️ *État actuel:*
+• Spy statuts: ${protectionState.spyStatusViews ? "✅ ON" : "❌ OFF"}
+• Spy lectures: ${protectionState.spyReadReceipts ? "✅ ON" : "❌ OFF"}
+• Spy réponses: ${protectionState.spyReplies ? "✅ ON" : "❌ OFF"}
+• Spy présence: ${protectionState.spyPresence ? "✅ ON" : "❌ OFF"}
+
+═══════════════════════════
+📋 *COMMANDES:*
+• \`.spy status\` → Qui a vu tes statuts
+• \`.spy messages\` → Qui a lu tes messages
+• \`.spy presence\` → Qui a ouvert ton chat
+• \`.spy on\` → Activer tout
+• \`.spy off\` → Désactiver tout
+• \`.spy clear\` → Effacer historique
+
+_Détecte quand quelqu'un entre dans ta discussion même avec vues désactivées!_`);
+      }
+    }
+
     // ────────── 🔐 MODE & PERMISSIONS ──────────
     case "mode": {
       if (!isOwner) return send("❌ Commande réservée à l'owner.");
-      
       const param = args?.toLowerCase();
       
       if (param === "public") {
@@ -3234,7 +3495,7 @@ async function startBot() {
     logger: pino({ level: "silent" }),
     browser: ["HANI-MD", "Chrome", "1.0.0"],
     keepAliveIntervalMs: 25000,
-    markOnlineOnConnect: true,
+    markOnlineOnConnect: false,
     generateHighQualityLinkPreview: true,
     syncFullHistory: false,
     retryRequestDelayMs: 2000,
@@ -3425,6 +3686,295 @@ async function startBot() {
 
   hani.ev.on("creds.update", saveCredsWrapper);
 
+  // ────────── 📇 FONCTION POUR FORMATER UN NUMÉRO ──────────
+  const formatPhoneForDisplay = (number) => {
+    if (!number) return "Inconnu";
+    const clean = number.replace(/[^0-9]/g, '');
+    // Formater selon la longueur
+    if (clean.length === 12 && clean.startsWith("225")) {
+      // Côte d'Ivoire: +225 XX XX XX XX XX
+      return `+225 ${clean.slice(3,5)} ${clean.slice(5,7)} ${clean.slice(7,9)} ${clean.slice(9,11)} ${clean.slice(11)}`;
+    } else if (clean.length === 11 && clean.startsWith("33")) {
+      // France: +33 X XX XX XX XX
+      return `+33 ${clean.slice(2,3)} ${clean.slice(3,5)} ${clean.slice(5,7)} ${clean.slice(7,9)} ${clean.slice(9)}`;
+    } else if (clean.length >= 10) {
+      // Autre pays: +XXX XXX XXX XXX
+      return `+${clean.slice(0,3)} ${clean.slice(3,6)} ${clean.slice(6,9)} ${clean.slice(9)}`;
+    }
+    return `+${clean}`;
+  };
+
+  // ────────── 👁️ ESPIONNAGE: QUI VOIT MES STATUTS ──────────
+  // Capturer TOUTES les vues de statuts (même avec confirmations désactivées)
+  hani.ev.on("message-receipt.update", async (updates) => {
+    try {
+      if (!protectionState.spyStatusViews) return; // Désactivé
+      
+      for (const update of updates) {
+        const { key, receipt } = update;
+        
+        // Vérifier si c'est un statut (status@broadcast)
+        if (key.remoteJid === "status@broadcast" && key.fromMe) {
+          // Quelqu'un a vu MON statut
+          const viewerJid = receipt.userJid;
+          const viewerNumber = viewerJid?.split("@")[0];
+          const viewerName = getContactName(viewerJid) || null;
+          const timestamp = receipt.readTimestamp ? receipt.readTimestamp * 1000 : Date.now();
+          const readTime = new Date(timestamp).toLocaleString("fr-FR");
+          const formattedPhone = formatPhoneForDisplay(viewerNumber);
+          
+          // Stocker dans spyData
+          spyData.statusViews.unshift({
+            viewer: viewerNumber,
+            viewerName: viewerName,
+            viewerJid: viewerJid,
+            timestamp: timestamp,
+            timeStr: readTime
+          });
+          
+          // Limiter le nombre d'entrées
+          if (spyData.statusViews.length > spyData.maxEntries) {
+            spyData.statusViews = spyData.statusViews.slice(0, spyData.maxEntries);
+          }
+          
+          // Envoyer notification à moi-même
+          const botJid = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
+          
+          // Message avec numéro très visible
+          const displayName = viewerName || "Contact inconnu";
+          const nameInfo = viewerName ? `👤 *Nom:* ${viewerName}` : `👤 *Contact:* Non enregistré`;
+          
+          await hani.sendMessage(botJid, {
+            text: `👁️ ═══════════════════════
+    *QUELQU'UN A VU TON STATUT*
+═══════════════════════
+
+${nameInfo}
+📱 *Numéro:* ${formattedPhone}
+🔢 *Brut:* ${viewerNumber}
+🕐 *Heure:* ${readTime}
+
+📞 *Appelle:* wa.me/${viewerNumber}
+💬 *Écris:* wa.me/${viewerNumber}
+
+═══════════════════════
+💡 _.spy_ pour voir tout le monde`
+          });
+          
+          console.log(`👁️ [STATUT VU] ${displayName} (${formattedPhone}) a vu ton statut`);
+        }
+      }
+    } catch (e) {
+      // Silencieux en cas d'erreur
+    }
+  });
+
+  // ────────── 📖 ESPIONNAGE: QUI LIT MES MESSAGES ──────────
+  // Capturer les confirmations de lecture (même désactivées côté destinataire)
+  hani.ev.on("messages.update", async (updates) => {
+    try {
+      for (const update of updates) {
+        const { key, update: msgUpdate } = update;
+        
+        // Si c'est mon message et il a été lu
+        if (key.fromMe && msgUpdate.status === 4) { // status 4 = read/lu
+          const recipientJid = key.remoteJid;
+          
+          // Ignorer les groupes et status@broadcast pour cette notification
+          if (recipientJid?.includes("@g.us") || recipientJid === "status@broadcast") continue;
+          
+          const recipientNumber = recipientJid?.split("@")[0];
+          
+          // ⚠️ IGNORER LES LID (Linked ID) - ce ne sont pas de vrais numéros
+          if (isLID(recipientNumber)) {
+            console.log(`📖 [IGNORÉ] LID détecté, pas un vrai numéro: ${recipientNumber}`);
+            continue;
+          }
+          
+          const recipientName = getContactName(recipientJid) || null;
+          const timestamp = Date.now();
+          const readTime = new Date(timestamp).toLocaleString("fr-FR");
+          const formattedPhone = formatPhoneForDisplay(recipientNumber);
+          
+          // Stocker dans spyData
+          spyData.messageReads.unshift({
+            reader: recipientNumber,
+            readerName: recipientName,
+            readerJid: recipientJid,
+            timestamp: timestamp,
+            timeStr: readTime
+          });
+          
+          // Limiter le nombre d'entrées
+          if (spyData.messageReads.length > spyData.maxEntries) {
+            spyData.messageReads = spyData.messageReads.slice(0, spyData.maxEntries);
+          }
+          
+          // Envoyer notification si activé
+          if (protectionState.spyReadReceipts) {
+            const botJid = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
+            const displayName = recipientName || "Contact inconnu";
+            const nameInfo = recipientName ? `👤 *Nom:* ${recipientName}` : `👤 *Contact:* Non enregistré`;
+            
+            await hani.sendMessage(botJid, {
+              text: `📖 ═══════════════════════
+    *MESSAGE LU PAR*
+═══════════════════════
+
+${nameInfo}
+📱 *Numéro:* ${formattedPhone}
+🔢 *Brut:* ${recipientNumber}
+🕐 *Lu à:* ${readTime}
+
+📞 *Appelle:* wa.me/${recipientNumber}
+💬 *Écris:* wa.me/${recipientNumber}
+
+═══════════════════════`
+            });
+          }
+          
+          console.log(`📖 [MESSAGE LU] ${recipientName || recipientNumber} (${formattedPhone}) a lu ton message`);
+        }
+      }
+    } catch (e) {
+      // Silencieux en cas d'erreur
+    }
+  });
+
+  // ────────── GESTION DES CONTACTS ──────────
+  // Mettre en cache les noms des contacts pour les utiliser dans les messages
+  hani.ev.on("contacts.upsert", (contacts) => {
+    for (const contact of contacts) {
+      const jid = contact.id;
+      const name = contact.name || contact.notify || contact.verifiedName;
+      if (jid && name) {
+        cacheContactName(jid, name);
+        console.log(`📇 Contact mis en cache: ${name} (${jid.split("@")[0]})`);
+      }
+    }
+  });
+
+  hani.ev.on("contacts.update", (updates) => {
+    for (const update of updates) {
+      const jid = update.id;
+      const name = update.name || update.notify || update.verifiedName;
+      if (jid && name) {
+        cacheContactName(jid, name);
+      }
+    }
+  });
+
+  // ────────── 🕵️ DÉTECTION DE PRÉSENCE (QUELQU'UN ENTRE DANS VOTRE CHAT) ──────────
+  // Détecte quand quelqu'un est en train d'écrire ou est actif dans une discussion privée
+  hani.ev.on("presence.update", async (presenceData) => {
+    try {
+      if (!protectionState.spyPresence) return;
+      
+      const { id: chatJid, presences } = presenceData;
+      const botNumber = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
+      
+      // Ignorer les groupes et les statuts
+      if (!chatJid || chatJid.endsWith("@g.us") || chatJid === "status@broadcast") return;
+      
+      // Parcourir les présences détectées
+      for (const [participantJid, presence] of Object.entries(presences || {})) {
+        // Ignorer ma propre présence
+        if (participantJid === botNumber || participantJid.split("@")[0] === hani.user?.id?.split(":")[0]) {
+          continue;
+        }
+        
+        // Détecter si quelqu'un est actif (composing = en train d'écrire, paused = vient de s'arrêter d'écrire)
+        const lastKnownPresence = presence?.lastKnownPresence;
+        
+        // Événements intéressants : "composing" (écrit), "recording" (enregistre vocal), "available" (en ligne dans le chat)
+        if (lastKnownPresence === "composing" || lastKnownPresence === "recording" || lastKnownPresence === "available") {
+          
+          const participantNumber = participantJid.split("@")[0];
+          
+          // ⚠️ IGNORER LES LID (Linked ID) - ce ne sont pas de vrais numéros
+          if (isLID(participantNumber)) {
+            console.log(`🕵️ [IGNORÉ] LID détecté dans présence: ${participantNumber}`);
+            continue;
+          }
+          
+          const cooldownKey = `${participantNumber}_${lastKnownPresence}`;
+          const now = Date.now();
+          
+          // Cooldown de 10 minutes par personne et par type d'action pour éviter le spam
+          const lastNotified = spyData.presenceCooldown[cooldownKey] || 0;
+          if (now - lastNotified < 10 * 60 * 1000) {
+            continue; // Déjà notifié récemment
+          }
+          
+          // Marquer comme notifié
+          spyData.presenceCooldown[cooldownKey] = now;
+          
+          // Formater le numéro pour affichage
+          const formattedPhone = formatPhoneForDisplay ? formatPhoneForDisplay(participantNumber) : `+${participantNumber}`;
+          const contactName = getCachedContactName(participantJid) || "Inconnu";
+          const detectTime = new Date(now).toLocaleString("fr-FR");
+          
+          // Déterminer l'action
+          let actionText, actionEmoji;
+          switch (lastKnownPresence) {
+            case "composing":
+              actionText = "est en train d'écrire";
+              actionEmoji = "✍️";
+              break;
+            case "recording":
+              actionText = "enregistre un vocal";
+              actionEmoji = "🎤";
+              break;
+            case "available":
+              actionText = "est en ligne dans votre chat";
+              actionEmoji = "👁️";
+              break;
+            default:
+              actionText = "est actif";
+              actionEmoji = "📱";
+          }
+          
+          // Enregistrer la détection
+          spyData.presenceDetected.push({
+            participant: participantJid,
+            number: participantNumber,
+            name: contactName,
+            action: lastKnownPresence,
+            timestamp: now
+          });
+          
+          // Limiter la taille de l'historique
+          if (spyData.presenceDetected.length > spyData.maxEntries) {
+            spyData.presenceDetected = spyData.presenceDetected.slice(-spyData.maxEntries);
+          }
+          
+          // Envoyer notification au owner
+          const ownerJid = config.NUMERO_OWNER.split(",")[0] + "@s.whatsapp.net";
+          
+          const notificationMsg = `╔═══════════════════════════════╗
+║   🕵️ PRÉSENCE DÉTECTÉE 🕵️   ║
+╠═══════════════════════════════╣
+║ ${actionEmoji} Quelqu'un ${actionText}!
+╠═══════════════════════════════╣
+║ 👤 Nom: ${contactName}
+║ 📞 Numéro: ${formattedPhone}
+║ 🔗 Lien: wa.me/${participantNumber}
+║ 🕐 Heure: ${detectTime}
+╠═══════════════════════════════╣
+║ 💡 Cette personne a ouvert
+║    votre discussion privée!
+╚═══════════════════════════════╝`;
+
+          await hani.sendMessage(ownerJid, { text: notificationMsg });
+          console.log(`🕵️ Présence détectée: ${contactName} (${participantNumber}) - ${lastKnownPresence}`);
+        }
+      }
+    } catch (e) {
+      // Silencieux en cas d'erreur
+      console.log("Erreur presence.update:", e.message);
+    }
+  });
+
   // ────────── GESTION DES MESSAGES ──────────
   hani.ev.on("messages.upsert", async (m) => {
     try {
@@ -3435,6 +3985,110 @@ async function startBot() {
       const from = msg.key.remoteJid;
       const botNumber = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
       const senderName = msg.pushName || "Inconnu";
+      
+      // ═══════════════════════════════════════════════════════════
+      // 🔔 DÉTECTION DES RÉPONSES = PREUVE DE LECTURE!
+      // Si quelqu'un me répond ou m'envoie un message, il a forcément lu!
+      // ═══════════════════════════════════════════════════════════
+      if (!msg.key.fromMe && protectionState.spyReplies && from !== "status@broadcast" && !from?.endsWith("@g.us")) {
+        const senderNumber = sender?.split("@")[0];
+        
+        // ⚠️ IGNORER LES LID (Linked ID) - ce ne sont pas de vrais numéros
+        if (isLID(senderNumber)) {
+          // Ne pas loguer pour éviter le spam, juste ignorer silencieusement
+        } else {
+        
+        const formattedPhone = formatPhoneForDisplay ? formatPhoneForDisplay(senderNumber) : `+${senderNumber}`;
+        const timestamp = Date.now();
+        const readTime = new Date(timestamp).toLocaleString("fr-FR");
+        
+        // Extraire un aperçu du message
+        const msgPreview = msg.message?.conversation || 
+                          msg.message?.extendedTextMessage?.text ||
+                          msg.message?.imageMessage?.caption ||
+                          msg.message?.videoMessage?.caption ||
+                          (msg.message?.audioMessage ? "🎵 Vocal" : "") ||
+                          (msg.message?.imageMessage ? "📷 Photo" : "") ||
+                          (msg.message?.videoMessage ? "🎬 Vidéo" : "") ||
+                          (msg.message?.stickerMessage ? "🎴 Sticker" : "") ||
+                          "📩 Message";
+        
+        // Vérifier si c'est une réponse à mon message
+        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        const isReply = !!quotedMsg;
+        
+        // Vérifier si on a envoyé un message à cette personne récemment (dans les 24h)
+        const pendingTime = spyData.pendingMessages[from];
+        const isFollowUp = pendingTime && (timestamp - pendingTime < 24 * 60 * 60 * 1000);
+        
+        // Si c'est une réponse OU un suivi à notre message
+        if (isReply || isFollowUp) {
+          // Stocker l'info
+          spyData.replies.unshift({
+            replier: senderNumber,
+            replierName: senderName,
+            replierJid: from,
+            timestamp: timestamp,
+            timeStr: readTime,
+            preview: msgPreview.slice(0, 50),
+            isDirectReply: isReply
+          });
+          
+          // Limiter les entrées
+          if (spyData.replies.length > spyData.maxEntries) {
+            spyData.replies = spyData.replies.slice(0, spyData.maxEntries);
+          }
+          
+          // Ajouter aussi aux lectures confirmées
+          spyData.messageReads.unshift({
+            reader: senderNumber,
+            readerName: senderName,
+            readerJid: from,
+            timestamp: timestamp,
+            timeStr: readTime,
+            confirmedBy: isReply ? "réponse" : "message"
+          });
+          
+          // Limiter
+          if (spyData.messageReads.length > spyData.maxEntries) {
+            spyData.messageReads = spyData.messageReads.slice(0, spyData.maxEntries);
+          }
+          
+          // Envoyer notification
+          const actionType = isReply ? "RÉPONDU À TON MESSAGE" : "T'A ÉCRIT";
+          
+          await hani.sendMessage(botNumber, {
+            text: `📖 ═══════════════════════════
+    *${actionType}* ✅
+═══════════════════════════
+
+👤 *Nom:* ${senderName}
+📱 *Numéro:* ${formattedPhone}
+🔢 *Brut:* ${senderNumber}
+🕐 *Quand:* ${readTime}
+
+💬 *Aperçu:* ${msgPreview.slice(0, 40)}${msgPreview.length > 40 ? "..." : ""}
+
+${isReply ? "↩️ _Cette personne a RÉPONDU à ton message!_" : "💡 _Cette personne t'a écrit après ton message!_"}
+
+📞 wa.me/${senderNumber}
+
+═══════════════════════════
+_Preuve qu'elle a LU ton message!_ ✅`
+          });
+          
+          console.log(`📖 [PREUVE LECTURE] ${senderName} (${formattedPhone}) a ${isReply ? "répondu" : "écrit"} - CONFIRMATION DE LECTURE!`);
+          
+          // Supprimer du pending
+          delete spyData.pendingMessages[from];
+        }
+        } // Fermer le else (pas LID)
+      }
+      
+      // Enregistrer les messages ENVOYÉS pour tracker les réponses
+      if (msg.key.fromMe && from !== "status@broadcast" && !from?.endsWith("@g.us")) {
+        spyData.pendingMessages[from] = Date.now();
+      }
       
       // 🔍 DÉBOGAGE ULTRA-COMPLET: Afficher STRUCTURE de tous les messages
       const msgType = getContentType(msg.message);
@@ -4169,13 +4823,12 @@ async function startBot() {
           
           // Envoyer un message personnalisé à la personne qui appelle
           const callerNumber = call.from?.split("@")[0] || "";
-          const callerName = getCachedContactName(call.from) || formatPhoneNumber(callerNumber);
           const callType = call.isVideo ? "vidéo" : "vocal";
           
           const message = `📵 *Appel ${callType} refusé*
 ━━━━━━━━━━━━━━━━━━━━━
 
-👋 Salut ${callerName}!
+👋 Salut!
 
 Je ne suis pas disponible pour les appels pour le moment.
 
