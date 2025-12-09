@@ -1167,12 +1167,15 @@ async function handleCommand(hani, msg, db) {
   }
   
   // Vérification STRICTE pour owner:
-  // SEUL le NUMERO_OWNER dans .env est owner
+  // Les NUMERO_OWNER dans .env sont owners (peut être plusieurs séparés par virgule)
   // Le numéro du bot LUI-MÊME peut aussi exécuter des commandes owner (pour le chat "Moi-même")
-  const isOwner = senderNumber === ownerNumber || 
-                  senderNumber.endsWith(ownerNumber) || 
-                  ownerNumber.endsWith(senderNumber) ||
-                  sender === formatNumber(ownerNumber);
+  const ownerNumbers = ownerNumber.split(',').map(n => n.trim().replace(/[^0-9]/g, ''));
+  const isOwner = ownerNumbers.some(owner => 
+    senderNumber === owner || 
+    senderNumber.endsWith(owner) || 
+    owner.endsWith(senderNumber) ||
+    sender === formatNumber(owner)
+  );
   
   // Le bot peut s'envoyer des commandes à lui-même (chat "Moi-même") 
   // SEULEMENT si fromMe ET que c'est dans le chat du bot
