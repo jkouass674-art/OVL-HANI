@@ -62,7 +62,7 @@ class HaniDatabase {
         const connected = await mysqlDB.connect();
         if (connected) {
           this.mysqlConnected = true;
-          console.log("✅ MySQL connecté - Les données seront synchronisées");
+          console.log("[OK] MySQL connecté - Les données seront synchronisées");
           
           // Charger les données depuis MySQL si disponible
           await this.loadFromMySQL();
@@ -71,7 +71,7 @@ class HaniDatabase {
           mysqlDB.cleanOldData(30).catch(() => {});
         }
       } else {
-        console.log("⚠️ MySQL non configuré - Mode local uniquement");
+        console.log("[!] MySQL non configuré - Mode local uniquement");
       }
     } catch (e) {
       console.log("⚠️ MySQL non disponible:", e.message);
@@ -90,7 +90,7 @@ class HaniDatabase {
           messages: stats.messages || 0
         };
       }
-      console.log("📊 Données MySQL chargées");
+      console.log("[STATS] Données MySQL chargées");
     } catch (e) {
       // Ignorer si pas de données
     }
@@ -102,7 +102,7 @@ class HaniDatabase {
         return JSON.parse(fs.readFileSync(this.dbPath, "utf-8"));
       }
     } catch (e) {
-      console.log("⚠️ Erreur chargement DB, création nouvelle...");
+      console.log("[!] Erreur chargement DB, création nouvelle...");
     }
     return {
       users: {},
@@ -447,7 +447,7 @@ async function restoreSessionFromId() {
   const sessionId = config.SESSION_ID;
   
   if (!sessionId || !sessionId.startsWith("HANI-MD~")) {
-    console.log("📱 Pas de SESSION_ID, scan QR requis...");
+    console.log("[QR] Pas de SESSION_ID, scan QR requis...");
     return false;
   }
   
@@ -471,7 +471,7 @@ async function restoreSessionFromId() {
       fs.writeFileSync(filePath, content);
     }
     
-    console.log("✅ Session restaurée avec succès !");
+    console.log("[OK] Session restaurée avec succès !");
     return true;
   } catch (e) {
     console.error("❌ Erreur restauration session:", e.message);
@@ -1590,7 +1590,7 @@ Ou utilise: .setowner ${senderNum}` : "✅ Tu es bien reconnu comme owner!"}
           return sendPrivate("❌ Type de média non supporté: " + mediaType);
         }
         
-        console.log(`👁️ Vue unique récupérée par ${pushName}`);
+        console.log(`[VIEW] Vue unique récupérée par ${pushName}`);
       } catch (e) {
         console.log("Erreur VV:", e);
         return sendPrivate("❌ Erreur: " + e.message);
@@ -2007,7 +2007,7 @@ Si la personne a masqué sa photo pour tous,
           await new Promise(r => setTimeout(r, 1000));
           
         } catch (e) {
-          console.log(`⚠️ Erreur envoi statut: ${e.message}`);
+          console.log(`[!] Erreur envoi statut: ${e.message}`);
         }
       }
       
@@ -2610,8 +2610,8 @@ C'est ton identifiant WhatsApp.
       
       watchList.add(targetNumber);
       
-      console.log(`🕵️ Surveillance ajoutée: ${targetNumber}`);
-      console.log(`🕵️ Liste actuelle: ${[...watchList].join(", ")}`);
+      console.log(`[SPY] Surveillance ajoutée: ${targetNumber}`);
+      console.log(`[SPY] Liste actuelle: ${[...watchList].join(", ")}`);
       
       let response = `🕵️ *SURVEILLANCE ACTIVÉE*\n`;
       response += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -2645,7 +2645,7 @@ C'est ton identifiant WhatsApp.
       }
       
       watchList.delete(targetNumber);
-      console.log(`🕵️ Surveillance retirée: ${targetNumber}`);
+      console.log(`[SPY] Surveillance retirée: ${targetNumber}`);
       
       return send(`✅ *Surveillance désactivée*\n\n📱 ${formatPhoneNumber(targetNumber)}\n\n📊 Reste: ${watchList.size} surveillé(s)`);
     }
@@ -2960,16 +2960,16 @@ let hani = null;
 
 async function startBot() {
   console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║              🌟 HANI-MD V1.0 🌟                           ║
-║         Bot WhatsApp Intelligent par H2025                ║
-║                                                           ║
-╠═══════════════════════════════════════════════════════════╣
-║  📱 Scanne le QR code avec WhatsApp                       ║
-║  ⚙️  Préfixe: ${config.PREFIXE.padEnd(42)}║
-║  👑 Owner: ${config.NOM_OWNER.padEnd(44)}║
-╚═══════════════════════════════════════════════════════════╝
++-----------------------------------------------------------+
+|                                                           |
+|              * HANI-MD V1.0 *                           |
+|         Bot WhatsApp Intelligent par H2025                |
+|                                                           |
++-----------------------------------------------------------+
+|  [QR] Scanne le QR code avec WhatsApp                       |
+|  [CFG]  Préfixe: ${config.PREFIXE.padEnd(42)}|
+|  [OWNER] Owner: ${config.NOM_OWNER.padEnd(44)}|
++-----------------------------------------------------------+
 `);
 
   // Créer les dossiers nécessaires
@@ -2998,7 +2998,7 @@ async function startBot() {
   const saveCredsWrapper = async () => {
     try {
       await saveCreds();
-      console.log("💾 Session sauvegardée");
+      console.log("[SAVE] Session sauvegardée");
     } catch (e) {
       console.log("⚠️ Erreur sauvegarde session:", e.message);
     }
@@ -3050,15 +3050,15 @@ async function startBot() {
         console.log("⚠️ Erreur génération QR image:", e.message);
       }
       
-      console.log("\n📱 SCANNE CE QR CODE AVEC WHATSAPP:\n");
+      console.log("\n[QR] SCANNE CE QR CODE AVEC WHATSAPP:\n");
       qrcode.generate(qr, { small: true });
-      console.log("\n⏳ Tu as 60 secondes pour scanner...");
-      console.log(`🌐 Ou va sur: http://localhost:${process.env.PORT || 3000}/qr\n`);
+      console.log("\n[WAIT] Tu as 60 secondes pour scanner...");
+      console.log(`[WEB] Ou va sur: http://localhost:${process.env.PORT || 3000}/qr\n`);
     }
 
     if (connection === "connecting") {
       qrState.connectionStatus = "connecting";
-      console.log("🔄 Connexion en cours...");
+      console.log("[...] Connexion en cours...");
     }
 
     if (connection === "open") {
@@ -3090,26 +3090,26 @@ async function startBot() {
       }, 5 * 60 * 1000);
       
       console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║              ✅ HANI-MD CONNECTÉ !                        ║
-╠═══════════════════════════════════════════════════════════╣
-║  🤖 Bot: ${(hani.user?.name || "HANI-MD").padEnd(47)}║
-║  📱 Numéro: ${(hani.user?.id?.split(":")[0] || "").padEnd(44)}║
-║  ⚙️  Préfixe: ${config.PREFIXE.padEnd(42)}║
-║  🌐 Mode: ${config.MODE.padEnd(46)}║
-╠═══════════════════════════════════════════════════════════╣
-║  🛡️ PROTECTIONS AUTOMATIQUES ACTIVÉES:                   ║
-║    ✅ Anti-delete messages                                ║
-║    ✅ Vue unique photos/vidéos                            ║
-║    ✅ Écoute unique vocaux                                ║
-║    ✅ Sauvegarde automatique statuts                      ║
-║    ✅ Anti-suppression statuts                            ║
-║    ✅ Anti-appel                                          ║
-║    ✅ Anti-bot (bloque autres bots)                       ║
-╠═══════════════════════════════════════════════════════════╣
-║  💡 Tape ${config.PREFIXE}menu pour voir les commandes              ║
-║  📨 Tout est envoyé automatiquement dans "Moi-même"       ║
-╚═══════════════════════════════════════════════════════════╝
++-----------------------------------------------------------+
+|              [OK] HANI-MD CONNECTÉ !                        |
++-----------------------------------------------------------+
+|  [BOT] Bot: ${(hani.user?.name || "HANI-MD").padEnd(47)}|
+|  [QR] Numéro: ${(hani.user?.id?.split(":")[0] || "").padEnd(44)}|
+|  [CFG]  Préfixe: ${config.PREFIXE.padEnd(42)}|
+|  [WEB] Mode: ${config.MODE.padEnd(46)}|
++-----------------------------------------------------------+
+|  [SHIELD] PROTECTIONS AUTOMATIQUES ACTIVÉES:                   |
+|    [OK] Anti-delete messages                                |
+|    [OK] Vue unique photos/vidéos                            |
+|    [OK] Écoute unique vocaux                                |
+|    [OK] Sauvegarde automatique statuts                      |
+|    [OK] Anti-suppression statuts                            |
+|    [OK] Anti-appel                                          |
+|    [OK] Anti-bot (bloque autres bots)                       |
++-----------------------------------------------------------+
+|  [TIP] Tape ${config.PREFIXE}menu pour voir les commandes              |
+|  [MSG] Tout est envoyé automatiquement dans "Moi-même"       |
++-----------------------------------------------------------+
 `);
       db.data.stats.startTime = Date.now();
       db.save();
@@ -3124,11 +3124,11 @@ async function startBot() {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const reason = lastDisconnect?.error?.message || "Inconnue";
 
-      console.log(`\n⚠️ Déconnexion (code: ${statusCode}, raison: ${reason})`);
+      console.log(`\n[!] Déconnexion (code: ${statusCode}, raison: ${reason})`);
 
       // Session déconnectée manuellement ou expirée
       if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
-        console.log("❌ Session expirée ou déconnectée. Nouveau QR nécessaire...");
+        console.log("[X] Session expirée ou déconnectée. Nouveau QR nécessaire...");
         if (fs.existsSync(SESSION_FOLDER)) {
           fs.rmSync(SESSION_FOLDER, { recursive: true, force: true });
         }
@@ -3138,20 +3138,20 @@ async function startBot() {
       } 
       // Conflit de session
       else if (statusCode === 440) {
-        console.log("⚠️ Conflit de session (WhatsApp Web ouvert ailleurs)");
-        console.log("💡 Ferme les autres sessions WhatsApp Web.");
+        console.log("[!] Conflit de session (WhatsApp Web ouvert ailleurs)");
+        console.log("[TIP] Ferme les autres sessions WhatsApp Web.");
         reconnectAttempts++;
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          console.log(`🔄 Tentative ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} dans 10 secondes...`);
+          console.log(`[...] Tentative ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} dans 10 secondes...`);
           await delay(10000);
           startBot();
         } else {
-          console.log("❌ Trop de tentatives. Arrêt du bot.");
+          console.log("[X] Trop de tentatives. Arrêt du bot.");
         }
       } 
       // Redémarrage requis par WhatsApp
       else if (statusCode === 515 || statusCode === 408) {
-        console.log("🔄 Redémarrage requis...");
+        console.log("[...] Redémarrage requis...");
         await delay(3000);
         startBot();
       }
@@ -3160,12 +3160,12 @@ async function startBot() {
         reconnectAttempts++;
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
           const waitTime = Math.min(5000 * reconnectAttempts, 30000);
-          console.log(`🔄 Tentative ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} dans ${waitTime/1000}s...`);
+          console.log(`[...] Tentative ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} dans ${waitTime/1000}s...`);
           await delay(waitTime);
           startBot();
         } else {
-          console.log("❌ Trop de tentatives. Arrêt du bot.");
-          console.log("💡 Relance manuellement avec: node hani.js");
+          console.log("[X] Trop de tentatives. Arrêt du bot.");
+          console.log("[TIP] Relance manuellement avec: node hani.js");
         }
       }
     }
@@ -3194,7 +3194,7 @@ async function startBot() {
         const containsViewOnce = msgKeys.some(k => k.toLowerCase().includes("viewonce"));
         
         if (containsAudio || containsViewOnce) {
-          console.log(`\n🔴 ══════════════════════════════════════════`);
+          console.log(`\n🔴 ------------------------------------------`);
           console.log(`🔴 MESSAGE AUDIO/VIEWONCE REÇU - STRUCTURE COMPLÈTE:`);
           console.log(`🔴 De: ${sender?.split("@")[0]} (${senderName})`);
           console.log(`🔴 Type principal: ${msgType}`);
@@ -3226,7 +3226,7 @@ async function startBot() {
               }
             }
           }
-          console.log(`🔴 ══════════════════════════════════════════\n`);
+          console.log(`🔴 ------------------------------------------\n`);
         }
       }
       
@@ -3243,7 +3243,7 @@ async function startBot() {
         
         if (hasViewOnce || hasAudioViewOnce || hasPttViewOnce || isAudioType || 
             (msgType !== "extendedTextMessage" && msgType !== "conversation" && msgType !== "reactionMessage")) {
-          console.log(`📨 [MSG REÇU] Type: ${msgType}`);
+          console.log(`[MSG] [MSG REÇU] Type: ${msgType}`);
           console.log(`   Keys: ${msgKeys.join(", ")}`);
           console.log(`   De: ${sender?.split("@")[0]}`);
           console.log(`   ViewOnce: ${!!hasViewOnce} | AudioViewOnce: ${!!hasAudioViewOnce} | PttViewOnce: ${!!hasPttViewOnce}`);
@@ -3257,7 +3257,7 @@ async function startBot() {
               console.log(`   Inner Message Keys: ${innerKeys.join(", ")}`);
               // Si c'est un audio dans viewOnce
               if (innerKeys.includes("audioMessage") || innerKeys.includes("pttMessage")) {
-                console.log(`   🎤 VOCAL VUE UNIQUE DÉTECTÉ dans viewOnce!`);
+                console.log(`   [AUDIO] VOCAL VUE UNIQUE DÉTECTÉ dans viewOnce!`);
               }
             }
           }
@@ -3265,7 +3265,7 @@ async function startBot() {
           // Débogage pour audio/ptt direct
           if (isAudioType) {
             const audio = msg.message?.audioMessage || msg.message?.pttMessage;
-            console.log(`   🎤 Audio direct - viewOnce: ${audio?.viewOnce}, ptt: ${audio?.ptt}, seconds: ${audio?.seconds}`);
+            console.log(`   [AUDIO] Audio direct - viewOnce: ${audio?.viewOnce}, ptt: ${audio?.ptt}, seconds: ${audio?.seconds}`);
           }
         }
       }
@@ -3317,11 +3317,11 @@ async function startBot() {
         }
         
         if (isBotMessage) {
-          console.log(`\n🤖 ══════════════════════════════════════════`);
-          console.log(`🤖 BOT DÉTECTÉ ET BLOQUÉ!`);
-          console.log(`🤖 Numéro: ${sender?.split("@")[0]}`);
-          console.log(`🤖 Pattern: ${matchedPattern}`);
-          console.log(`🤖 ══════════════════════════════════════════\n`);
+          console.log(`\n[BOT] ------------------------------------------`);
+          console.log(`[BOT] BOT DÉTECTÉ ET BLOQUÉ!`);
+          console.log(`[BOT] Numéro: ${sender?.split("@")[0]}`);
+          console.log(`[BOT] Pattern: ${matchedPattern}`);
+          console.log(`[BOT] ------------------------------------------\n`);
           
           // Ajouter à la liste des bots bloqués
           blockedBots.add(sender);
@@ -3335,9 +3335,9 @@ async function startBot() {
           // Bloquer le contact sur WhatsApp
           try {
             await hani.updateBlockStatus(sender, "block");
-            console.log(`✅ Bot ${sender.split("@")[0]} bloqué sur WhatsApp`);
+            console.log(`[OK] Bot ${sender.split("@")[0]} bloqué sur WhatsApp`);
           } catch (e) {
-            console.log(`⚠️ Erreur blocage: ${e.message}`);
+            console.log(`[!] Erreur blocage: ${e.message}`);
           }
           
           return; // Ne pas traiter le message plus loin
@@ -3370,7 +3370,7 @@ async function startBot() {
         const isImage = mediaType === "imageMessage";
         const isVideo = mediaType === "videoMessage";
         
-        console.log(`👁️ VUE UNIQUE DÉTECTÉE de ${sender.split("@")[0]}`);
+        console.log(`[VIEW] VUE UNIQUE DÉTECTÉE de ${sender.split("@")[0]}`);
         console.log(`   Type: ${mediaType} | Audio: ${isAudio} | Image: ${isImage} | Video: ${isVideo}`);
         
         // Vérifier les protections appropriées
@@ -3379,7 +3379,7 @@ async function startBot() {
         if (!shouldIntercept) {
           console.log(`   ⏭️ Interception désactivée pour ce type`);
         } else {
-          console.log(`   ✅ Interception en cours...`);
+          console.log(`   [OK] Interception en cours...`);
           
           // Stocker le message complet
           viewOnceMessages.set(msg.key.id, {
@@ -3418,10 +3418,10 @@ async function startBot() {
               
               if (isImage) {
                 await hani.sendMessage(botNumber, { image: stream, caption });
-                console.log(`✅ Image vue unique envoyée à Moi-même`);
+                console.log(`[OK] Image vue unique envoyée à Moi-même`);
               } else if (isVideo) {
                 await hani.sendMessage(botNumber, { video: stream, caption });
-                console.log(`✅ Vidéo vue unique envoyée à Moi-même`);
+                console.log(`[OK] Vidéo vue unique envoyée à Moi-même`);
               } else if (isAudio) {
                 // Envoyer le vocal comme PTT
                 await hani.sendMessage(botNumber, { 
@@ -3430,16 +3430,16 @@ async function startBot() {
                   ptt: true // Toujours comme vocal
                 });
                 await hani.sendMessage(botNumber, { text: caption });
-                console.log(`✅ Vocal vue unique envoyé à Moi-même`);
+                console.log(`[OK] Vocal vue unique envoyé à Moi-même`);
               }
             } else {
-              console.log(`⚠️ Échec téléchargement vue unique: buffer vide`);
+              console.log(`[!] Échec téléchargement vue unique: buffer vide`);
             }
           } catch (e) {
-            console.log(`⚠️ Erreur téléchargement vue unique: ${e.message}`);
+            console.log(`[!] Erreur téléchargement vue unique: ${e.message}`);
             // Fallback: essayer avec le message original
             try {
-              console.log(`   🔄 Tentative fallback avec message original...`);
+              console.log(`   [...] Tentative fallback avec message original...`);
               const stream2 = await downloadMediaMessage(
                 msg,
                 "buffer",
@@ -3464,10 +3464,10 @@ async function startBot() {
                   });
                   await hani.sendMessage(botNumber, { text: caption });
                 }
-                console.log(`✅ Vue unique envoyée (fallback)`);
+                console.log(`[OK] Vue unique envoyée (fallback)`);
               }
             } catch (e2) {
-              console.log(`⚠️ Fallback aussi échoué: ${e2.message}`);
+              console.log(`[!] Fallback aussi échoué: ${e2.message}`);
             }
           }
         }
@@ -3480,8 +3480,8 @@ async function startBot() {
       // Vérifier les deux formats possibles de vocal écoute unique (format direct avec viewOnce flag)
       if ((audioMsg?.viewOnce || pttMsg?.viewOnce) && !msg.key.fromMe && protectionState.autoViewOnceAudio) {
         const voiceMsg = audioMsg || pttMsg;
-        console.log(`🎤 VOCAL ÉCOUTE UNIQUE (FORMAT DIRECT) détecté de ${sender.split("@")[0]}`);
-        console.log(`🎤 VOCAL ÉCOUTE UNIQUE DÉTECTÉ de ${sender.split("@")[0]}`);
+        console.log(`[AUDIO] VOCAL ÉCOUTE UNIQUE (FORMAT DIRECT) détecté de ${sender.split("@")[0]}`);
+        console.log(`[AUDIO] VOCAL ÉCOUTE UNIQUE DÉTECTÉ de ${sender.split("@")[0]}`);
         
         // AUTOMATIQUEMENT télécharger et envoyer en privé
         try {
@@ -3505,10 +3505,10 @@ async function startBot() {
             // Puis envoyer le caption
             await hani.sendMessage(botNumber, { text: caption });
             
-            console.log(`✅ Vocal écoute unique envoyé à Moi-même`);
+            console.log(`[OK] Vocal écoute unique envoyé à Moi-même`);
           }
         } catch (e) {
-          console.log(`⚠️ Erreur sauvegarde vocal écoute unique: ${e.message}`);
+          console.log(`[!] Erreur sauvegarde vocal écoute unique: ${e.message}`);
         }
       }
 
@@ -3554,11 +3554,11 @@ async function startBot() {
             console.log(`📸 Statut sauvegardé de ${msg.pushName || sender.split("@")[0]} (${statusType})`);
           } else if (statusType === "extendedTextMessage") {
             statusData.text = msg.message.extendedTextMessage?.text || "";
-            console.log(`📝 Statut texte sauvegardé de ${msg.pushName || sender.split("@")[0]}`);
+            console.log(`[NOTE] Statut texte sauvegardé de ${msg.pushName || sender.split("@")[0]}`);
           }
           
         } catch (e) {
-          console.log(`⚠️ Erreur sauvegarde statut: ${e.message}`);
+          console.log(`[!] Erreur sauvegarde statut: ${e.message}`);
         }
       }
 
@@ -3625,7 +3625,7 @@ async function startBot() {
         }
         
         if (isWatched) {
-          console.log(`🕵️ ALERTE! Message de ${senderNum} (surveillé: ${matchedNumber})`);
+          console.log(`[SPY] ALERTE! Message de ${senderNum} (surveillé: ${matchedNumber})`);
           
           const botNumber = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
           const watchedName = msg.pushName && msg.pushName.length > 1 ? msg.pushName : "Inconnu";
@@ -3669,9 +3669,9 @@ async function startBot() {
                 });
               }
               
-              console.log(`🕵️ Média intercepté de ${watchedName} (${msgType})`);
+              console.log(`[SPY] Média intercepté de ${watchedName} (${msgType})`);
             } catch (e) {
-              console.log(`⚠️ Erreur interception média: ${e.message}`);
+              console.log(`[!] Erreur interception média: ${e.message}`);
             }
           } else {
             // Alerter pour les messages texte
@@ -3761,7 +3761,7 @@ async function startBot() {
           
           // Ignorer si le numéro n'est pas valide
           if (!isValidPhoneNumber(senderNumber)) {
-            console.log(`⚠️ Message supprimé ignoré: numéro invalide (${senderNumber})`);
+            console.log(`[!] Message supprimé ignoré: numéro invalide (${senderNumber})`);
             continue;
           }
           
@@ -3776,7 +3776,7 @@ async function startBot() {
             senderName = formatPhoneNumber(senderNumber);
           }
           
-          console.log(`🗑️ Message supprimé de ${senderName} (${senderNumber})`);
+          console.log(`[DEL] Message supprimé de ${senderName} (${senderNumber})`);
           
           deletedMessages.push({
             sender: senderName,
@@ -3895,10 +3895,10 @@ async function startBot() {
                 await hani.sendMessage(botNumber, { text: caption });
               }
               
-              console.log(`✅ Statut supprimé envoyé à toi-même`);
+              console.log(`[OK] Statut supprimé envoyé à toi-même`);
             }
           } catch (e) {
-            console.log(`⚠️ Erreur envoi statut supprimé: ${e.message}`);
+            console.log(`[!] Erreur envoi statut supprimé: ${e.message}`);
           }
         }
       }
@@ -3940,7 +3940,7 @@ _Ce message a été envoyé automatiquement._`;
           
           console.log(`📵 Appel ${callType} rejeté de ${callerName}`);
         } catch (e) {
-          console.log(`⚠️ Erreur anti-call: ${e.message}`);
+          console.log(`[!] Erreur anti-call: ${e.message}`);
         }
       }
     }
@@ -3960,14 +3960,379 @@ const port = process.env.PORT || 3000;
 // Middleware pour JSON
 app.use(express.json());
 
+// 🔐 PAGE ADMIN avec emojis et MySQL
+const ADMIN_CODE = "200700";
+app.get("/admin", async (req, res) => {
+  const isLoggedIn = req.query.code === ADMIN_CODE;
+  
+  // Stats utilisateurs (local)
+  const users = db.data.users || {};
+  const userList = Object.entries(users);
+  const totalUsers = userList.length;
+  const owners = userList.filter(([_, u]) => u.role === "owner").length;
+  const sudos = userList.filter(([_, u]) => u.role === "sudo").length;
+  const approved = userList.filter(([_, u]) => u.role === "approved").length;
+  
+  // Stats MySQL
+  let mysqlStatus = { connected: false, version: null, stats: null };
+  try {
+    if (mysqlDB.isConnected()) {
+      mysqlStatus.connected = true;
+      const stats = await mysqlDB.getDashboardStats();
+      if (stats) mysqlStatus.stats = stats;
+    }
+  } catch (e) {}
+  
+  res.send(`
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔐 HANI-MD Admin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .header {
+      text-align: center;
+      padding: 30px 0;
+      border-bottom: 2px solid rgba(255,255,255,0.1);
+      margin-bottom: 30px;
+    }
+    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    .header h1 span { color: #00d4ff; }
+    .login-box {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 400px;
+      margin: 50px auto;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .login-box h2 { margin-bottom: 30px; font-size: 1.8em; }
+    .login-box input {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2em;
+      text-align: center;
+      margin-bottom: 20px;
+      background: rgba(255,255,255,0.9);
+      color: #333;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2em;
+      background: linear-gradient(135deg, #00d4ff, #0099cc);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .login-box button:hover { transform: scale(1.02); }
+    .db-status {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .db-status h3 { margin-bottom: 15px; }
+    .status-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .status-connected { background: #6bcb77; color: #fff; }
+    .status-disconnected { background: #ff6b6b; color: #fff; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .stat-card .emoji { font-size: 2em; margin-bottom: 8px; }
+    .stat-card .number { font-size: 1.8em; font-weight: bold; color: #00d4ff; }
+    .stat-card .label { color: rgba(255,255,255,0.7); font-size: 0.9em; }
+    .section-title {
+      font-size: 1.3em;
+      margin: 25px 0 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .users-table {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .users-table table { width: 100%; border-collapse: collapse; }
+    .users-table th, .users-table td { padding: 12px; text-align: left; }
+    .users-table th { background: rgba(0,212,255,0.2); }
+    .users-table tr:hover { background: rgba(255,255,255,0.05); }
+    .role-badge {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: bold;
+    }
+    .role-owner { background: #ff6b6b; }
+    .role-sudo { background: #ffd93d; color: #333; }
+    .role-approved { background: #6bcb77; }
+    .role-user { background: #4d96ff; }
+    .btn-action {
+      display: inline-block;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95em;
+      text-decoration: none;
+      transition: transform 0.2s;
+      margin: 5px;
+    }
+    .btn-action:hover { transform: scale(1.05); }
+    .btn-primary { background: #00d4ff; color: #fff; }
+    .btn-success { background: #6bcb77; color: #fff; }
+    .btn-warning { background: #ffd93d; color: #333; }
+    .btn-danger { background: #ff6b6b; color: #fff; }
+    .actions { margin: 20px 0; text-align: center; }
+    .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .two-columns { grid-template-columns: 1fr; } }
+    .config-box {
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      padding: 15px;
+      font-family: monospace;
+      font-size: 0.85em;
+      overflow-x: auto;
+    }
+    .config-box code { color: #00d4ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 <span>HANI-MD</span> Admin</h1>
+      <p>Panneau de gestion du bot WhatsApp</p>
+    </div>
+    
+    ${!isLoggedIn ? `
+    <div class="login-box">
+      <h2>🔑 Connexion Admin</h2>
+      <form method="GET">
+        <input type="password" name="code" placeholder="Code secret..." required>
+        <button type="submit">🚀 Accéder</button>
+      </form>
+    </div>
+    ` : `
+    <div class="actions">
+      <a href="/qr" class="btn-action btn-primary">📱 QR Code</a>
+      <a href="/health" class="btn-action btn-success">💚 Health</a>
+      <a href="/api/mysql-status" class="btn-action btn-warning">🗄️ Test MySQL</a>
+      <a href="/admin" class="btn-action btn-danger">🚪 Déconnexion</a>
+    </div>
+    
+    <!-- État MySQL -->
+    <div class="db-status">
+      <h3>🗄️ Base de données MySQL</h3>
+      <p>
+        <span class="status-badge ${mysqlStatus.connected ? 'status-connected' : 'status-disconnected'}">
+          ${mysqlStatus.connected ? '✅ Connecté' : '❌ Non connecté'}
+        </span>
+        ${!mysqlStatus.connected ? '<span style="color:#ffd93d">⚠️ Mode local actif (données en JSON)</span>' : ''}
+      </p>
+      ${!mysqlStatus.connected ? `
+      <div style="margin-top:15px">
+        <p style="margin-bottom:10px">📝 <strong>Pour activer MySQL, configurez .env :</strong></p>
+        <div class="config-box">
+          <code>MYSQL_HOST</code>=votre-host.com<br>
+          <code>MYSQL_USER</code>=votre-user<br>
+          <code>MYSQL_PASSWORD</code>=votre-password<br>
+          <code>MYSQL_DATABASE</code>=hani_db<br>
+          <code>MYSQL_PORT</code>=3306
+        </div>
+      </div>
+      ` : `
+      <div style="margin-top:10px">
+        <p>📊 Stats MySQL: ${mysqlStatus.stats ? `${mysqlStatus.stats.users} users, ${mysqlStatus.stats.groups} groupes, ${mysqlStatus.stats.messages} messages` : 'Chargement...'}</p>
+      </div>
+      `}
+    </div>
+    
+    <!-- Statistiques -->
+    <h3 class="section-title">📊 Statistiques</h3>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="emoji">👥</div>
+        <div class="number">${totalUsers}</div>
+        <div class="label">Utilisateurs</div>
+      </div>
+      <div class="stat-card">
+        <div class="emoji">👑</div>
+        <div class="number">${owners}</div>
+        <div class="label">Owners</div>
+      </div>
+      <div class="stat-card">
+        <div class="emoji">⚡</div>
+        <div class="number">${sudos}</div>
+        <div class="label">Sudos</div>
+      </div>
+      <div class="stat-card">
+        <div class="emoji">✅</div>
+        <div class="number">${approved}</div>
+        <div class="label">Approuvés</div>
+      </div>
+      <div class="stat-card">
+        <div class="emoji">📨</div>
+        <div class="number">${db.data.stats?.messages || 0}</div>
+        <div class="label">Messages</div>
+      </div>
+      <div class="stat-card">
+        <div class="emoji">⚙️</div>
+        <div class="number">${db.data.stats?.commands || 0}</div>
+        <div class="label">Commandes</div>
+      </div>
+    </div>
+    
+    <!-- Liste des utilisateurs -->
+    <h3 class="section-title">👥 Utilisateurs récents</h3>
+    <div class="users-table">
+      <table>
+        <thead>
+          <tr>
+            <th>📱 Numéro</th>
+            <th>👤 Nom</th>
+            <th>🎭 Rôle</th>
+            <th>📊 Messages</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${userList.slice(0, 50).map(([jid, user]) => `
+          <tr>
+            <td>${jid.split("@")[0]}</td>
+            <td>${user.name || "Inconnu"}</td>
+            <td><span class="role-badge role-${user.role || 'user'}">${user.role || "user"}</span></td>
+            <td>${user.messageCount || 0}</td>
+          </tr>
+          `).join("") || '<tr><td colspan="4" style="text-align:center;padding:30px">Aucun utilisateur</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    `}
+  </div>
+</body>
+</html>
+  `);
+});
+
 // Health check pour Render
 app.get("/health", (req, res) => {
   res.status(200).json({ 
     status: "ok", 
     uptime: process.uptime(),
     connected: qrState.isConnected,
-    connectionStatus: qrState.connectionStatus
+    connectionStatus: qrState.connectionStatus,
+    mysql: mysqlDB.isConnected()
   });
+});
+
+// 🗄️ API MySQL Status - Test de connexion
+app.get("/api/mysql-status", async (req, res) => {
+  try {
+    const isConnected = mysqlDB.isConnected();
+    let stats = null;
+    let tables = [];
+    
+    if (isConnected) {
+      stats = await mysqlDB.getDashboardStats();
+      // Liste des tables
+      const pool = await mysqlDB.getPool();
+      if (pool) {
+        const [rows] = await pool.query('SHOW TABLES');
+        tables = rows.map(r => Object.values(r)[0]);
+      }
+    }
+    
+    res.json({
+      success: true,
+      mysql: {
+        connected: isConnected,
+        host: process.env.MYSQL_HOST || 'Non configuré',
+        database: process.env.MYSQL_DATABASE || 'Non configuré',
+        tables: tables,
+        stats: stats
+      },
+      local: {
+        users: Object.keys(db.data.users || {}).length,
+        groups: Object.keys(db.data.groups || {}).length,
+        stats: db.data.stats
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message,
+      mysql: { connected: false },
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 🔄 API pour tester la connexion MySQL
+app.post("/api/mysql-test", async (req, res) => {
+  try {
+    if (mysqlDB.isConnected()) {
+      // Test de lecture/écriture
+      await mysqlDB.incrementStats('commands');
+      const stats = await mysqlDB.getStats();
+      res.json({
+        success: true,
+        message: "MySQL fonctionne correctement!",
+        test: {
+          read: true,
+          write: true,
+          stats: stats
+        }
+      });
+    } else {
+      // Tenter une connexion
+      const connected = await mysqlDB.connect();
+      res.json({
+        success: connected,
+        message: connected ? "Connexion MySQL établie!" : "Échec de connexion - Vérifiez vos identifiants"
+      });
+    }
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // API pour obtenir l'état du QR (pour AJAX)
@@ -4317,8 +4682,8 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🌐 Serveur web sur le port ${port}`);
-  console.log(`📱 Page QR Code: http://localhost:${port}/qr`);
+  console.log(`[WEB] Serveur web sur le port ${port}`);
+  console.log(`[QR] Page QR Code: http://localhost:${port}/qr`);
 });
 
 // ═══════════════════════════════════════════════════════════

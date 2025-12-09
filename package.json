@@ -33,6 +33,7 @@
     "cookie": "^1.0.2",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "file-type": "^16.5.3",
     "g-i-s": "^2.1.7",
     "gtts": "^0.2.1",
