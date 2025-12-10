@@ -4850,73 +4850,88 @@ app.get("/api/admin/stats", async (req, res) => {
 
 // 🚫 API pour BANNIR un utilisateur
 app.post("/api/admin/ban", (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (!isValidSession(token)) {
-    return res.status(401).json({ error: "Non autorisé" });
+  try {
+    const token = req.headers['x-admin-token'];
+    if (!isValidSession(token)) {
+      return res.status(401).json({ error: "Non autorisé" });
+    }
+    
+    const { jid } = req.body;
+    if (!jid) return res.status(400).json({ error: "JID requis" });
+    
+    if (!db.data.banned) db.data.banned = [];
+    
+    if (!db.data.banned.includes(jid)) {
+      db.data.banned.push(jid);
+      db.save();
+      console.log(`[ADMIN] 🚫 Utilisateur banni: ${jid}`);
+    }
+    
+    res.json({ success: true, message: `${jid} a été banni` });
+  } catch (error) {
+    console.error("[ADMIN ERROR] Ban:", error.message);
+    res.status(500).json({ error: "Erreur serveur: " + error.message });
   }
-  
-  const { jid } = req.body;
-  if (!jid) return res.status(400).json({ error: "JID requis" });
-  
-  if (!db.data.banned) db.data.banned = [];
-  
-  if (!db.data.banned.includes(jid)) {
-    db.data.banned.push(jid);
-    db.save();
-    console.log(`[ADMIN] 🚫 Utilisateur banni: ${jid}`);
-  }
-  
-  res.json({ success: true, message: `${jid} a été banni` });
 });
 
 // ✅ API pour DÉBANNIR un utilisateur
 app.post("/api/admin/unban", (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (!isValidSession(token)) {
-    return res.status(401).json({ error: "Non autorisé" });
+  try {
+    const token = req.headers['x-admin-token'];
+    if (!isValidSession(token)) {
+      return res.status(401).json({ error: "Non autorisé" });
+    }
+    
+    const { jid } = req.body;
+    if (!jid) return res.status(400).json({ error: "JID requis" });
+    
+    if (!db.data.banned) db.data.banned = [];
+    
+    const index = db.data.banned.indexOf(jid);
+    if (index > -1) {
+      db.data.banned.splice(index, 1);
+      db.save();
+      console.log(`[ADMIN] ✅ Utilisateur débanni: ${jid}`);
+    }
+    
+    res.json({ success: true, message: `${jid} a été débanni` });
+  } catch (error) {
+    console.error("[ADMIN ERROR] Unban:", error.message);
+    res.status(500).json({ error: "Erreur serveur: " + error.message });
   }
-  
-  const { jid } = req.body;
-  if (!jid) return res.status(400).json({ error: "JID requis" });
-  
-  if (!db.data.banned) db.data.banned = [];
-  
-  const index = db.data.banned.indexOf(jid);
-  if (index > -1) {
-    db.data.banned.splice(index, 1);
-    db.save();
-    console.log(`[ADMIN] ✅ Utilisateur débanni: ${jid}`);
-  }
-  
-  res.json({ success: true, message: `${jid} a été débanni` });
 });
 
 // ⚠️ API pour LIMITER un utilisateur (restreindre commandes)
 app.post("/api/admin/limit", (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (!isValidSession(token)) {
-    return res.status(401).json({ error: "Non autorisé" });
+  try {
+    const token = req.headers['x-admin-token'];
+    if (!isValidSession(token)) {
+      return res.status(401).json({ error: "Non autorisé" });
+    }
+    
+    const { jid, level } = req.body;
+    if (!jid) return res.status(400).json({ error: "JID requis" });
+    
+    if (!db.data.limitedUsers) db.data.limitedUsers = {};
+    
+    // Niveaux de limitation:
+    // 1 = Basique (menu, help seulement)
+    // 2 = Moyen (pas de téléchargement, pas d'IA)
+    // 3 = Strict (commandes fun seulement)
+    
+    db.data.limitedUsers[jid] = {
+      level: level || 1,
+      blockedCommands: getBlockedCommands(level || 1),
+      limitedAt: new Date().toISOString()
+    };
+    db.save();
+    
+    console.log(`[ADMIN] ⚠️ Utilisateur limité (niveau ${level}): ${jid}`);
+    res.json({ success: true, message: `${jid} limité au niveau ${level}` });
+  } catch (error) {
+    console.error("[ADMIN ERROR] Limit:", error.message);
+    res.status(500).json({ error: "Erreur serveur: " + error.message });
   }
-  
-  const { jid, level } = req.body;
-  if (!jid) return res.status(400).json({ error: "JID requis" });
-  
-  if (!db.data.limitedUsers) db.data.limitedUsers = {};
-  
-  // Niveaux de limitation:
-  // 1 = Basique (menu, help seulement)
-  // 2 = Moyen (pas de téléchargement, pas d'IA)
-  // 3 = Strict (commandes fun seulement)
-  
-  db.data.limitedUsers[jid] = {
-    level: level || 1,
-    blockedCommands: getBlockedCommands(level || 1),
-    limitedAt: new Date().toISOString()
-  };
-  db.save();
-  
-  console.log(`[ADMIN] ⚠️ Utilisateur limité (niveau ${level}): ${jid}`);
-  res.json({ success: true, message: `${jid} limité au niveau ${level}` });
 });
 
 // Fonction pour obtenir les commandes bloquées par niveau
@@ -4936,69 +4951,88 @@ function getBlockedCommands(level) {
 
 // ✅ API pour RETIRER les limitations
 app.post("/api/admin/unlimit", (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (!isValidSession(token)) {
-    return res.status(401).json({ error: "Non autorisé" });
+  try {
+    const token = req.headers['x-admin-token'];
+    if (!isValidSession(token)) {
+      return res.status(401).json({ error: "Non autorisé" });
+    }
+    
+    const { jid } = req.body;
+    if (!jid) return res.status(400).json({ error: "JID requis" });
+    
+    if (!db.data.limitedUsers) db.data.limitedUsers = {};
+    
+    if (db.data.limitedUsers[jid]) {
+      delete db.data.limitedUsers[jid];
+      db.save();
+      console.log(`[ADMIN] ✅ Limitations retirées: ${jid}`);
+    }
+    
+    res.json({ success: true, message: `Limitations retirées pour ${jid}` });
+  } catch (error) {
+    console.error("[ADMIN ERROR] Unlimit:", error.message);
+    res.status(500).json({ error: "Erreur serveur: " + error.message });
   }
-  
-  const { jid } = req.body;
-  if (!jid) return res.status(400).json({ error: "JID requis" });
-  
-  if (!db.data.limitedUsers) db.data.limitedUsers = {};
-  
-  if (db.data.limitedUsers[jid]) {
-    delete db.data.limitedUsers[jid];
-    db.save();
-    console.log(`[ADMIN] ✅ Limitations retirées: ${jid}`);
-  }
-  
-  res.json({ success: true, message: `Limitations retirées pour ${jid}` });
 });
 
 // 🗑️ API pour SUPPRIMER un utilisateur de la base
 app.post("/api/admin/delete", (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (!isValidSession(token)) {
-    return res.status(401).json({ error: "Non autorisé" });
+  try {
+    const token = req.headers['x-admin-token'];
+    if (!isValidSession(token)) {
+      return res.status(401).json({ error: "Non autorisé" });
+    }
+    
+    const { jid } = req.body;
+    if (!jid) return res.status(400).json({ error: "JID requis" });
+    
+    // Admin a le contrôle total - peut supprimer n'importe qui
+    if (!db.data.users) db.data.users = {};
+    
+    if (db.data.users[jid]) {
+      delete db.data.users[jid];
+      db.save();
+      console.log(`[ADMIN] 🗑️ Utilisateur supprimé: ${jid}`);
+    }
+    
+    res.json({ success: true, message: `${jid} supprimé` });
+  } catch (error) {
+    console.error("[ADMIN ERROR] Delete:", error.message);
+    res.status(500).json({ error: "Erreur serveur: " + error.message });
   }
-  
-  const { jid } = req.body;
-  if (!jid) return res.status(400).json({ error: "JID requis" });
-  
-  // Admin a le contrôle total - peut supprimer n'importe qui
-  if (db.data.users[jid]) {
-    delete db.data.users[jid];
-    db.save();
-    console.log(`[ADMIN] 🗑️ Utilisateur supprimé: ${jid}`);
-  }
-  
-  res.json({ success: true, message: `${jid} supprimé` });
 });
 
 // 👑 API pour changer le RÔLE d'un utilisateur
 app.post("/api/admin/role", (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (!isValidSession(token)) {
-    return res.status(401).json({ error: "Non autorisé" });
+  try {
+    const token = req.headers['x-admin-token'];
+    if (!isValidSession(token)) {
+      return res.status(401).json({ error: "Non autorisé" });
+    }
+    
+    const { jid, role } = req.body;
+    if (!jid || !role) return res.status(400).json({ error: "JID et rôle requis" });
+    
+    const validRoles = ['user', 'approved', 'sudo', 'owner'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: "Rôle invalide" });
+    }
+    
+    if (!db.data.users) db.data.users = {};
+    
+    if (!db.data.users[jid]) {
+      db.data.users[jid] = { name: "Inconnu", messageCount: 0 };
+    }
+    
+    db.data.users[jid].role = role;
+    db.save();
+    
+    console.log(`[ADMIN] 👑 Rôle changé: ${jid} → ${role}`);
+    res.json({ success: true, message: `${jid} est maintenant ${role}` });
+  } catch (error) {
+    console.error("[ADMIN ERROR] Role:", error.message);
+    res.status(500).json({ error: "Erreur serveur: " + error.message });
   }
-  
-  const { jid, role } = req.body;
-  if (!jid || !role) return res.status(400).json({ error: "JID et rôle requis" });
-  
-  const validRoles = ['user', 'approved', 'sudo', 'owner'];
-  if (!validRoles.includes(role)) {
-    return res.status(400).json({ error: "Rôle invalide" });
-  }
-  
-  if (!db.data.users[jid]) {
-    db.data.users[jid] = { name: "Inconnu", messageCount: 0 };
-  }
-  
-  db.data.users[jid].role = role;
-  db.save();
-  
-  console.log(`[ADMIN] 👑 Rôle changé: ${jid} → ${role}`);
-  res.json({ success: true, message: `${jid} est maintenant ${role}` });
 });
 
 // 🔐 PAGE ADMIN SÉCURISÉE - Code d'accès: 200700
