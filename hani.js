@@ -4792,11 +4792,15 @@ app.get("/api/admin/check", (req, res) => {
 // API pour les stats admin (protégée)
 app.get("/api/admin/stats", async (req, res) => {
   const token = req.headers['x-admin-token'];
+  console.log('[ADMIN API] /stats - Token:', token ? 'présent' : 'absent');
+  
   if (!isValidSession(token)) {
+    console.log('[ADMIN API] /stats - Session invalide');
     return res.status(401).json({ error: "Non autorisé" });
   }
   
   try {
+    console.log('[ADMIN API] /stats - Chargement des données...');
     const users = db.data.users || {};
     const userList = Object.entries(users);
     const banned = db.data.banned || [];
@@ -5531,29 +5535,34 @@ app.get("/admin", async (req, res) => {
         if (u.isBanned) statusBadge = '<span class="status-badge status-banned">🚫 Banni</span>';
         else if (u.isLimited) statusBadge = '<span class="status-badge status-limited">⚠️ Limité</span>';
         
+        // Échapper les valeurs pour éviter les problèmes de syntaxe
+        const safeJid = u.jid.replace(/'/g, "\\\\'");
+        const safeName = (u.name || 'Inconnu').replace(/'/g, "\\\\'");
+        const safeRole = u.role || 'user';
+        
         // Admin a le contrôle total sur tous les utilisateurs, y compris les owners
         let actions = '';
         if (u.isBanned) {
-          actions += '<button class="action-btn btn-unban" onclick="unbanUser(\\'' + u.jid + '\\')">✅ Débannir</button>';
+          actions += '<button class="action-btn btn-unban" onclick="unbanUser(\\'' + safeJid + '\\')">✅ Débannir</button>';
         } else {
-          actions += '<button class="action-btn btn-ban" onclick="banUser(\\'' + u.jid + '\\')">🚫 Bannir</button>';
+          actions += '<button class="action-btn btn-ban" onclick="banUser(\\'' + safeJid + '\\')">🚫 Bannir</button>';
         }
         
         if (u.isLimited) {
-          actions += '<button class="action-btn btn-unlimit" onclick="unlimitUser(\\'' + u.jid + '\\')">🔓 Délimiter</button>';
+          actions += '<button class="action-btn btn-unlimit" onclick="unlimitUser(\\'' + safeJid + '\\')">🔓 Délimiter</button>';
         } else {
-          actions += '<button class="action-btn btn-limit" onclick="openLimitModal(\\'' + u.jid + '\\', \\'' + u.name + '\\')">⚠️ Limiter</button>';
+          actions += '<button class="action-btn btn-limit" onclick="openLimitModal(\\'' + safeJid + '\\', \\'' + safeName + '\\')">⚠️ Limiter</button>';
         }
         
-        actions += '<button class="action-btn btn-role" onclick="openRoleModal(\\'' + u.jid + '\\', \\'' + u.name + '\\', \\'' + u.role + '\\')">👑</button>';
-        actions += '<button class="action-btn btn-delete" onclick="deleteUser(\\'' + u.jid + '\\')">🗑️</button>';
+        actions += '<button class="action-btn btn-role" onclick="openRoleModal(\\'' + safeJid + '\\', \\'' + safeName + '\\', \\'' + safeRole + '\\')">👑</button>';
+        actions += '<button class="action-btn btn-delete" onclick="deleteUser(\\'' + safeJid + '\\')">🗑️</button>';
         
         return '<tr>' +
           '<td>' + u.number + '</td>' +
-          '<td>' + u.name + (u.isBot ? ' 🤖' : '') + '</td>' +
-          '<td><span class="role-badge role-' + u.role + '">' + u.role + '</span></td>' +
+          '<td>' + (u.name || 'Inconnu') + (u.isBot ? ' 🤖' : '') + '</td>' +
+          '<td><span class="role-badge role-' + safeRole + '">' + safeRole + '</span></td>' +
           '<td>' + statusBadge + '</td>' +
-          '<td>' + u.messages + '</td>' +
+          '<td>' + (u.messages || 0) + '</td>' +
           '<td><div class="action-btns">' + actions + '</div></td>' +
           '</tr>';
       }).join('');
@@ -5622,16 +5631,27 @@ app.get("/admin", async (req, res) => {
     
     async function apiAction(url, body) {
       try {
+        console.log('[ADMIN] Appel API:', url, body);
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
           body: JSON.stringify(body)
         });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('[ADMIN] Erreur HTTP:', res.status, errorText);
+          showToast('Erreur HTTP ' + res.status + ': ' + errorText, 'error');
+          return;
+        }
+        
         const data = await res.json();
-        showToast(data.message || (data.success ? 'Succès!' : 'Erreur'), data.success ? 'success' : 'error');
+        console.log('[ADMIN] Réponse:', data);
+        showToast(data.message || (data.success ? 'Succès!' : (data.error || 'Erreur')), data.success ? 'success' : 'error');
         if (data.success) refreshStats();
       } catch (e) {
-        showToast('Erreur de connexion', 'error');
+        console.error('[ADMIN] Exception:', e);
+        showToast('Erreur: ' + e.message, 'error');
       }
     }
     
