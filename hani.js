@@ -523,7 +523,30 @@ const spyData = {
   presenceDetected: [], // { jid, name, type, timestamp } - Présences détectées
   lastPresenceNotif: {}, // Anti-spam: dernière notification par JID
   maxEntries: 100,       // Garder les 100 derniers
-  presenceCooldown: {}   // Cooldown pour éviter spam
+  presenceCooldown: {},  // Cooldown pour éviter spam
+  // 🆕 Nouvelles données espion avancées
+  lastSeen: {},          // { jid: { lastOnline, lastOffline, name } } - Tracker connexion
+  profileChanges: [],    // { jid, type: 'photo'|'bio'|'name', oldValue, newValue, timestamp }
+  profileSnapshots: {},  // { jid: { photo, bio, name, lastCheck } } - Snapshots profils
+  callHistory: [],       // { jid, name, type: 'audio'|'video', direction: 'in'|'out', timestamp, duration }
+  groupActivity: [],     // { groupJid, groupName, action, participant, participantName, timestamp }
+};
+
+// 🆕 Configuration espion avancé
+const spyConfig = {
+  trackLastSeen: true,      // Tracker les connexions/déconnexions
+  alertPhotoChange: true,   // Alerter si photo de profil change
+  alertBioChange: true,     // Alerter si bio change
+  alertNameChange: true,    // Alerter si nom change
+  trackCalls: true,         // Historique des appels
+  trackGroups: true,        // Surveillance des groupes
+  ghostMode: false,         // Mode fantôme (invisible total)
+  ghostModeAdvanced: {
+    hideOnline: true,       // Ne pas montrer "en ligne"
+    hideTyping: true,       // Ne pas montrer "en train d'écrire"
+    hideRead: true,         // Ne pas envoyer les confirmations de lecture
+    hideRecording: true,    // Ne pas montrer "enregistre un vocal"
+  }
 };
 
 // 📇 FONCTION pour détecter si c'est un LID (Linked ID) et pas un vrai numéro
@@ -645,10 +668,19 @@ const ownerOnlyCommands = [
   // Surveillance (tes fonctionnalités privées)
   "deleted", "delmsg", "deletedstatus", "delstatus", "statusdel",
   "vv", "viewonce", "getstatus", "spy", "track", "activity", "invisible",
-  // Commandes espion séparées
+  // Commandes espion séparées (basiques)
   "spyread", "quilit", "spyreply", "quirepond", "spypresence", "quiouvre", "quiecrit",
   "spyhistory", "spyall", "espionhistorique", "spystatus", "quivoitmesstatus",
   "spyon", "spyoff", "spyclear",
+  // Commandes espion avancées
+  "lastseen", "derniereconnexion", "online",
+  "profilechanges", "changementsprofil", "alertprofil",
+  "callhistory", "historiqueappels", "appels",
+  "groupspy", "surveillancegroupe", "groupactivity",
+  "ghost", "fantome",
+  "spyexport", "exportspy", "exporterespion",
+  "spystats", "statsespion", "statistiques",
+  "trackconfig", "spyconfig", "configespion",
 ];
 
 // Liste des utilisateurs approuvés
@@ -1069,7 +1101,7 @@ function getMainMenu(prefix, userRole = "user") {
 ┃ ${prefix}ban/@unban
 ┃ ${prefix}mode public/private
 ┃
-┃ 🕵️ *ESPIONNAGE*
+┃ 🕵️ *ESPIONNAGE BASIQUE*
 ┃ ${prefix}spyon/spyoff - Mode espion
 ┃ ${prefix}spyread - Qui lit mes msg
 ┃ ${prefix}spyreply - Qui répond
@@ -1077,6 +1109,18 @@ function getMainMenu(prefix, userRole = "user") {
 ┃ ${prefix}spystatus - Qui voit statuts
 ┃ ${prefix}spyhistory - Historique complet
 ┃ ${prefix}spyclear - Effacer données
+┃
+┃ 🔍 *ESPIONNAGE AVANCÉ*
+┃ ${prefix}lastseen - Connexions trackées
+┃ ${prefix}callhistory - Historique appels
+┃ ${prefix}groupspy - Activité groupes
+┃ ${prefix}profilechanges - Changements profil
+┃ ${prefix}spystats [jour/semaine/mois]
+┃ ${prefix}spyexport - Exporter données
+┃ ${prefix}spyconfig - Configuration
+┃ ${prefix}ghost on/off - Mode fantôme
+┃
+┃ 🎯 *SURVEILLANCE CIBLÉE*
 ┃ ${prefix}spy @user - Surveiller
 ┃ ${prefix}unspy @user - Arrêter
 ┃ ${prefix}spylist - Liste surveillés
@@ -1589,7 +1633,418 @@ async function handleCommand(hani, msg, db) {
       spyData.pendingMessages = {};
       spyData.presenceDetected = [];
       spyData.presenceCooldown = {};
-      return send(`🗑️ *Historique espion effacé*\n\n✅ Toutes les données supprimées:\n• Vues de statuts\n• Lectures de messages\n• Réponses\n• Présences détectées`);
+      spyData.lastSeen = {};
+      spyData.profileChanges = [];
+      spyData.callHistory = [];
+      spyData.groupActivity = [];
+      return send(`🗑️ *Historique espion effacé*\n\n✅ Toutes les données supprimées:\n• Vues de statuts\n• Lectures de messages\n• Réponses\n• Présences détectées\n• Historique connexions\n• Changements de profil\n• Historique appels\n• Activité groupes`);
+    }
+
+    // ────────── 🆕 NOUVELLES COMMANDES ESPION AVANCÉES ──────────
+
+    case "lastseen":
+    case "derniereconnexion":
+    case "online": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const entries = Object.entries(spyData.lastSeen || {});
+      if (entries.length === 0) {
+        return send(`🕐 *Aucune connexion détectée*\n\n_Le tracker de connexion collecte les données en arrière-plan._\n\n💡 Les connexions seront enregistrées automatiquement.`);
+      }
+      
+      let list = `🕐 ═══════════════════════════\n   *DERNIÈRES CONNEXIONS*\n═══════════════════════════\n\n`;
+      let i = 1;
+      
+      // Trier par dernière activité
+      const sorted = entries.sort((a, b) => {
+        const timeA = a[1].lastOnline || a[1].lastOffline || 0;
+        const timeB = b[1].lastOnline || b[1].lastOffline || 0;
+        return timeB - timeA;
+      });
+      
+      for (const [jid, data] of sorted.slice(0, 20)) {
+        const name = data.name || "Inconnu";
+        const cleanNum = jid.replace(/[^0-9]/g, '').slice(-10);
+        const lastOnline = data.lastOnline ? new Date(data.lastOnline).toLocaleString("fr-FR") : "—";
+        const lastOffline = data.lastOffline ? new Date(data.lastOffline).toLocaleString("fr-FR") : "—";
+        const isOnlineNow = data.isOnline ? "🟢" : "⚪";
+        
+        list += `*${i}.* ${isOnlineNow} ${name}\n`;
+        list += `   📱 +${cleanNum}\n`;
+        list += `   🟢 Dernière connexion: ${lastOnline}\n`;
+        list += `   ⚪ Dernière déconnexion: ${lastOffline}\n\n`;
+        i++;
+      }
+      
+      list += `═══════════════════════════\n📊 *Total:* ${entries.length} utilisateurs trackés`;
+      return send(list);
+    }
+
+    case "profilechanges":
+    case "changementsprofil":
+    case "alertprofil": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      if (!spyData.profileChanges || spyData.profileChanges.length === 0) {
+        return send(`📸 *Aucun changement de profil détecté*\n\n_Le système surveille automatiquement:_\n• 📷 Changements de photo de profil\n• 📝 Changements de bio/statut\n• 👤 Changements de nom\n\n💡 Les alertes seront envoyées en temps réel.`);
+      }
+      
+      let list = `📸 ═══════════════════════════\n   *CHANGEMENTS DE PROFIL*\n═══════════════════════════\n\n`;
+      
+      const changes = spyData.profileChanges.slice(-20).reverse();
+      let i = 1;
+      
+      for (const change of changes) {
+        const emoji = change.type === 'photo' ? '📷' : change.type === 'bio' ? '📝' : '👤';
+        const typeLabel = change.type === 'photo' ? 'Photo' : change.type === 'bio' ? 'Bio' : 'Nom';
+        const time = new Date(change.timestamp).toLocaleString("fr-FR");
+        
+        list += `*${i}.* ${emoji} *${change.name || "Inconnu"}*\n`;
+        list += `   📱 ${change.jid.replace(/[^0-9]/g, '').slice(-10)}\n`;
+        list += `   🔄 *Type:* ${typeLabel}\n`;
+        if (change.type !== 'photo') {
+          list += `   📤 Avant: _${(change.oldValue || "").slice(0, 30)}..._\n`;
+          list += `   📥 Après: _${(change.newValue || "").slice(0, 30)}..._\n`;
+        }
+        list += `   🕐 ${time}\n\n`;
+        i++;
+      }
+      
+      list += `═══════════════════════════\n📊 *Total:* ${spyData.profileChanges.length} changements détectés`;
+      return send(list);
+    }
+
+    case "callhistory":
+    case "historiqueappels":
+    case "appels": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      if (!spyData.callHistory || spyData.callHistory.length === 0) {
+        return send(`📞 *Aucun appel enregistré*\n\n_Le système enregistre automatiquement:_\n• 📞 Appels audio reçus/émis\n• 📹 Appels vidéo reçus/émis\n• ⏱️ Durée et heure\n• ❌ Appels manqués/rejetés`);
+      }
+      
+      let list = `📞 ═══════════════════════════\n   *HISTORIQUE DES APPELS*\n═══════════════════════════\n\n`;
+      
+      const calls = spyData.callHistory.slice(-20).reverse();
+      let i = 1;
+      
+      for (const call of calls) {
+        const emoji = call.type === 'video' ? '📹' : '📞';
+        const direction = call.direction === 'in' ? '📥 Reçu' : '📤 Émis';
+        const status = call.status === 'missed' ? '❌ Manqué' : call.status === 'rejected' ? '🚫 Rejeté' : '✅ Terminé';
+        const time = new Date(call.timestamp).toLocaleString("fr-FR");
+        const duration = call.duration ? `${Math.floor(call.duration / 60)}:${(call.duration % 60).toString().padStart(2, '0')}` : "—";
+        
+        list += `*${i}.* ${emoji} *${call.name || "Inconnu"}*\n`;
+        list += `   📱 +${call.jid?.replace(/[^0-9]/g, '').slice(-10) || "?"}\n`;
+        list += `   ${direction} • ${status}\n`;
+        list += `   ⏱️ Durée: ${duration} • 🕐 ${time}\n\n`;
+        i++;
+      }
+      
+      list += `═══════════════════════════\n📊 *Total:* ${spyData.callHistory.length} appels enregistrés`;
+      return send(list);
+    }
+
+    case "groupspy":
+    case "surveillancegroupe":
+    case "groupactivity": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      if (!spyData.groupActivity || spyData.groupActivity.length === 0) {
+        return send(`👥 *Aucune activité de groupe détectée*\n\n_Le système surveille automatiquement:_\n• ➕ Qui rejoint un groupe\n• ➖ Qui quitte un groupe\n• 👑 Changements d'admin\n• 📝 Changements de nom/description\n• 🔗 Changements de lien d'invitation`);
+      }
+      
+      let list = `👥 ═══════════════════════════\n   *ACTIVITÉ DES GROUPES*\n═══════════════════════════\n\n`;
+      
+      const activities = spyData.groupActivity.slice(-25).reverse();
+      let i = 1;
+      
+      for (const act of activities) {
+        let emoji, actionText;
+        switch (act.action) {
+          case 'add': emoji = '➕'; actionText = 'A rejoint'; break;
+          case 'remove': emoji = '➖'; actionText = 'A quitté'; break;
+          case 'promote': emoji = '👑'; actionText = 'Promu admin'; break;
+          case 'demote': emoji = '👤'; actionText = 'Rétrogradé'; break;
+          default: emoji = '📋'; actionText = act.action;
+        }
+        const time = new Date(act.timestamp).toLocaleString("fr-FR");
+        
+        list += `*${i}.* ${emoji} *${act.participantName || "Inconnu"}*\n`;
+        list += `   👥 Groupe: ${act.groupName || "?"}\n`;
+        list += `   🔄 ${actionText}\n`;
+        list += `   🕐 ${time}\n\n`;
+        i++;
+      }
+      
+      list += `═══════════════════════════\n📊 *Total:* ${spyData.groupActivity.length} événements`;
+      return send(list);
+    }
+
+    case "ghost":
+    case "fantome":
+    case "invisible": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const param = args?.toLowerCase();
+      
+      if (param === "on" || param === "activer") {
+        spyConfig.ghostMode = true;
+        spyConfig.ghostModeAdvanced.hideOnline = true;
+        spyConfig.ghostModeAdvanced.hideTyping = true;
+        spyConfig.ghostModeAdvanced.hideRead = true;
+        spyConfig.ghostModeAdvanced.hideRecording = true;
+        
+        return send(`👻 *MODE FANTÔME ACTIVÉ* ✅\n\n🔒 *Tu es maintenant invisible:*\n• ⚪ Personne ne te voit "en ligne"\n• ✍️ Personne ne voit quand tu écris\n• 👁️ Personne ne voit si tu lis les messages\n• 🎤 Personne ne voit si tu enregistres\n\n⚠️ _Tu peux toujours tout voir des autres!_\n\n💡 \`.ghost off\` pour désactiver`);
+        
+      } else if (param === "off" || param === "desactiver") {
+        spyConfig.ghostMode = false;
+        spyConfig.ghostModeAdvanced.hideOnline = false;
+        spyConfig.ghostModeAdvanced.hideTyping = false;
+        spyConfig.ghostModeAdvanced.hideRead = false;
+        spyConfig.ghostModeAdvanced.hideRecording = false;
+        
+        return send(`👻 *MODE FANTÔME DÉSACTIVÉ* ❌\n\n🔓 *Tu es visible normalement:*\n• 🟢 Les autres te voient "en ligne"\n• ✍️ Les autres voient quand tu écris\n• ✅ Les autres voient les confirmations de lecture\n\n💡 \`.ghost on\` pour redevenir invisible`);
+        
+      } else if (param === "status" || !param) {
+        const status = spyConfig.ghostMode ? "✅ ACTIVÉ" : "❌ DÉSACTIVÉ";
+        return send(`👻 *MODE FANTÔME: ${status}*\n\n⚙️ *Configuration:*\n• Cacher "en ligne": ${spyConfig.ghostModeAdvanced.hideOnline ? "✅" : "❌"}\n• Cacher "écrit...": ${spyConfig.ghostModeAdvanced.hideTyping ? "✅" : "❌"}\n• Cacher lecture: ${spyConfig.ghostModeAdvanced.hideRead ? "✅" : "❌"}\n• Cacher enregistrement: ${spyConfig.ghostModeAdvanced.hideRecording ? "✅" : "❌"}\n\n📋 *Commandes:*\n• \`.ghost on\` → Invisible total\n• \`.ghost off\` → Visible normal`);
+      }
+      
+      return send(`👻 *MODE FANTÔME*\n\n📋 *Usage:*\n• \`.ghost on\` → Activer (invisible)\n• \`.ghost off\` → Désactiver (visible)\n• \`.ghost status\` → Voir l'état`);
+    }
+
+    case "spyexport":
+    case "exportspy":
+    case "exporterespion": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const now = new Date().toLocaleString("fr-FR").replace(/[/:]/g, "-");
+      
+      let exportData = `═══════════════════════════════════════\n`;
+      exportData += `   EXPORT DONNÉES ESPION - ${now}\n`;
+      exportData += `═══════════════════════════════════════\n\n`;
+      
+      // Stats générales
+      exportData += `📊 STATISTIQUES GÉNÉRALES\n`;
+      exportData += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      exportData += `• Vues de statuts: ${spyData.statusViews?.length || 0}\n`;
+      exportData += `• Messages lus: ${spyData.messageReads?.length || 0}\n`;
+      exportData += `• Réponses: ${spyData.replies?.length || 0}\n`;
+      exportData += `• Présences: ${spyData.presenceDetected?.length || 0}\n`;
+      exportData += `• Connexions trackées: ${Object.keys(spyData.lastSeen || {}).length}\n`;
+      exportData += `• Changements profil: ${spyData.profileChanges?.length || 0}\n`;
+      exportData += `• Appels: ${spyData.callHistory?.length || 0}\n`;
+      exportData += `• Activités groupe: ${spyData.groupActivity?.length || 0}\n\n`;
+      
+      // Vues de statuts
+      if (spyData.statusViews && spyData.statusViews.length > 0) {
+        exportData += `👁️ VUES DE STATUTS (${spyData.statusViews.length})\n`;
+        exportData += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        for (const v of spyData.statusViews.slice(-20)) {
+          exportData += `• ${v.viewerName || "?"} (${v.viewer}) - ${v.timeStr || ""}\n`;
+        }
+        exportData += `\n`;
+      }
+      
+      // Lectures
+      if (spyData.messageReads && spyData.messageReads.length > 0) {
+        exportData += `📖 LECTURES DE MESSAGES (${spyData.messageReads.length})\n`;
+        exportData += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        for (const r of spyData.messageReads.slice(-20)) {
+          exportData += `• ${r.readerName || "?"} (${r.reader}) - ${r.timeStr || ""}\n`;
+        }
+        exportData += `\n`;
+      }
+      
+      // Réponses
+      if (spyData.replies && spyData.replies.length > 0) {
+        exportData += `↩️ RÉPONSES (${spyData.replies.length})\n`;
+        exportData += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        for (const r of spyData.replies.slice(-20)) {
+          const preview = r.preview ? r.preview.slice(0, 50) : "";
+          exportData += `• ${r.replierName || "?"}: "${preview}"\n`;
+        }
+        exportData += `\n`;
+      }
+      
+      // Présences
+      if (spyData.presenceDetected && spyData.presenceDetected.length > 0) {
+        exportData += `✍️ PRÉSENCES DÉTECTÉES (${spyData.presenceDetected.length})\n`;
+        exportData += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        for (const p of spyData.presenceDetected.slice(-20)) {
+          const action = p.action === "composing" ? "Écrit" : p.action === "recording" ? "Enregistre" : "Actif";
+          exportData += `• ${p.name || "?"} (${p.number}) - ${action}\n`;
+        }
+        exportData += `\n`;
+      }
+      
+      // Appels
+      if (spyData.callHistory && spyData.callHistory.length > 0) {
+        exportData += `📞 HISTORIQUE APPELS (${spyData.callHistory.length})\n`;
+        exportData += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        for (const c of spyData.callHistory.slice(-20)) {
+          const type = c.type === 'video' ? '📹' : '📞';
+          const dir = c.direction === 'in' ? 'Reçu' : 'Émis';
+          exportData += `• ${type} ${c.name || "?"} - ${dir} - ${new Date(c.timestamp).toLocaleString("fr-FR")}\n`;
+        }
+        exportData += `\n`;
+      }
+      
+      exportData += `═══════════════════════════════════════\n`;
+      exportData += `   FIN DE L'EXPORT\n`;
+      exportData += `═══════════════════════════════════════\n`;
+      
+      return send(exportData);
+    }
+
+    case "spystats":
+    case "statsespion":
+    case "statistiques": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const param = args?.toLowerCase();
+      const now = Date.now();
+      const oneDay = 24 * 60 * 60 * 1000;
+      const oneWeek = 7 * oneDay;
+      const oneMonth = 30 * oneDay;
+      
+      let period = oneDay;
+      let periodName = "aujourd'hui";
+      
+      if (param === "semaine" || param === "week") {
+        period = oneWeek;
+        periodName = "cette semaine";
+      } else if (param === "mois" || param === "month") {
+        period = oneMonth;
+        periodName = "ce mois";
+      }
+      
+      // Filtrer par période
+      const filterByPeriod = (arr, timestampKey = "timestamp") => {
+        return (arr || []).filter(item => {
+          const ts = item[timestampKey] || item.timestamp || 0;
+          return (now - ts) < period;
+        });
+      };
+      
+      const statusViewsPeriod = filterByPeriod(spyData.statusViews);
+      const readsPeriod = filterByPeriod(spyData.messageReads);
+      const repliesPeriod = filterByPeriod(spyData.replies);
+      const presencePeriod = filterByPeriod(spyData.presenceDetected);
+      const callsPeriod = filterByPeriod(spyData.callHistory);
+      const groupPeriod = filterByPeriod(spyData.groupActivity);
+      
+      // Top viewers
+      const viewerCounts = {};
+      for (const v of statusViewsPeriod) {
+        viewerCounts[v.viewer] = (viewerCounts[v.viewer] || 0) + 1;
+      }
+      const topViewers = Object.entries(viewerCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      
+      // Top lecteurs
+      const readerCounts = {};
+      for (const r of readsPeriod) {
+        readerCounts[r.reader] = (readerCounts[r.reader] || 0) + 1;
+      }
+      const topReaders = Object.entries(readerCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      
+      let stats = `📊 ═══════════════════════════\n   *STATISTIQUES ESPION*\n   _${periodName}_\n═══════════════════════════\n\n`;
+      
+      stats += `📈 *RÉSUMÉ:*\n`;
+      stats += `• 👁️ Vues statuts: ${statusViewsPeriod.length}\n`;
+      stats += `• 📖 Messages lus: ${readsPeriod.length}\n`;
+      stats += `• ↩️ Réponses: ${repliesPeriod.length}\n`;
+      stats += `• ✍️ Présences: ${presencePeriod.length}\n`;
+      stats += `• 📞 Appels: ${callsPeriod.length}\n`;
+      stats += `• 👥 Événements groupe: ${groupPeriod.length}\n\n`;
+      
+      if (topViewers.length > 0) {
+        stats += `🏆 *TOP VIEWERS STATUTS:*\n`;
+        for (let i = 0; i < topViewers.length; i++) {
+          const [viewer, count] = topViewers[i];
+          stats += `${i + 1}. ${viewer.replace(/[^0-9]/g, '').slice(-10)} (${count} vues)\n`;
+        }
+        stats += `\n`;
+      }
+      
+      if (topReaders.length > 0) {
+        stats += `🏆 *TOP LECTEURS:*\n`;
+        for (let i = 0; i < topReaders.length; i++) {
+          const [reader, count] = topReaders[i];
+          stats += `${i + 1}. ${reader.replace(/[^0-9]/g, '').slice(-10)} (${count} lectures)\n`;
+        }
+        stats += `\n`;
+      }
+      
+      stats += `═══════════════════════════\n`;
+      stats += `📋 *Périodes:*\n`;
+      stats += `• \`.spystats\` → Aujourd'hui\n`;
+      stats += `• \`.spystats semaine\` → Cette semaine\n`;
+      stats += `• \`.spystats mois\` → Ce mois`;
+      
+      return send(stats);
+    }
+
+    case "trackconfig":
+    case "spyconfig":
+    case "configespion": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const param = args?.toLowerCase()?.split(" ")[0];
+      const value = args?.toLowerCase()?.split(" ")[1];
+      
+      if (param && value) {
+        const boolValue = value === "on" || value === "true" || value === "1";
+        
+        switch (param) {
+          case "lastseen":
+            spyConfig.trackLastSeen = boolValue;
+            return send(`🕐 Tracker connexions: ${boolValue ? "✅ ON" : "❌ OFF"}`);
+          case "photo":
+            spyConfig.alertPhotoChange = boolValue;
+            return send(`📷 Alertes photo: ${boolValue ? "✅ ON" : "❌ OFF"}`);
+          case "bio":
+            spyConfig.alertBioChange = boolValue;
+            return send(`📝 Alertes bio: ${boolValue ? "✅ ON" : "❌ OFF"}`);
+          case "name":
+            spyConfig.alertNameChange = boolValue;
+            return send(`👤 Alertes nom: ${boolValue ? "✅ ON" : "❌ OFF"}`);
+          case "calls":
+            spyConfig.trackCalls = boolValue;
+            return send(`📞 Tracker appels: ${boolValue ? "✅ ON" : "❌ OFF"}`);
+          case "groups":
+            spyConfig.trackGroups = boolValue;
+            return send(`👥 Tracker groupes: ${boolValue ? "✅ ON" : "❌ OFF"}`);
+        }
+      }
+      
+      let config = `⚙️ ═══════════════════════════\n   *CONFIGURATION ESPION*\n═══════════════════════════\n\n`;
+      
+      config += `🔍 *TRACKERS:*\n`;
+      config += `• 🕐 Connexions: ${spyConfig.trackLastSeen ? "✅" : "❌"}\n`;
+      config += `• 📞 Appels: ${spyConfig.trackCalls ? "✅" : "❌"}\n`;
+      config += `• 👥 Groupes: ${spyConfig.trackGroups ? "✅" : "❌"}\n\n`;
+      
+      config += `🔔 *ALERTES PROFIL:*\n`;
+      config += `• 📷 Photo: ${spyConfig.alertPhotoChange ? "✅" : "❌"}\n`;
+      config += `• 📝 Bio: ${spyConfig.alertBioChange ? "✅" : "❌"}\n`;
+      config += `• 👤 Nom: ${spyConfig.alertNameChange ? "✅" : "❌"}\n\n`;
+      
+      config += `👻 *MODE FANTÔME:*\n`;
+      config += `• Global: ${spyConfig.ghostMode ? "✅ ACTIF" : "❌ INACTIF"}\n\n`;
+      
+      config += `═══════════════════════════\n`;
+      config += `📋 *Modifier:*\n`;
+      config += `\`.spyconfig [option] [on/off]\`\n\n`;
+      config += `Options: lastseen, photo, bio, name, calls, groups`;
+      
+      return send(config);
     }
 
     case "whoami": {
@@ -5299,13 +5754,51 @@ _Preuve qu'elle a LU ton message!_ ✅`
 
   // ────────── ANTI-CALL ──────────
   hani.ev.on("call", async (calls) => {
-    if (!protectionState.anticall) return;
-    
     for (const call of calls || []) {
-      if (call.status === "offer") {
+      // 🆕 ENREGISTRER L'APPEL DANS L'HISTORIQUE
+      if (spyConfig.trackCalls) {
+        try {
+          const callerJid = call.from;
+          const callerNumber = callerJid?.split("@")[0] || "";
+          let callerName = "Inconnu";
+          
+          try {
+            const contact = await hani.onWhatsApp(callerJid);
+            if (contact && contact[0]) {
+              callerName = contact[0].notify || contact[0].name || callerNumber;
+            }
+          } catch (e) {}
+          
+          const callEntry = {
+            jid: callerJid,
+            name: callerName,
+            type: call.isVideo ? 'video' : 'audio',
+            direction: 'in',
+            status: call.status === 'offer' ? 'incoming' : call.status,
+            timestamp: Date.now()
+          };
+          
+          // Ajouter à l'historique
+          if (!spyData.callHistory) spyData.callHistory = [];
+          spyData.callHistory.unshift(callEntry);
+          if (spyData.callHistory.length > 100) spyData.callHistory.pop();
+          
+          console.log(`📞 [CALL SPY] ${call.isVideo ? 'Vidéo' : 'Audio'} de ${callerName} (${callerNumber})`);
+        } catch (e) {
+          console.log(`[!] Erreur enregistrement appel: ${e.message}`);
+        }
+      }
+      
+      // ANTI-CALL: Rejeter si activé
+      if (protectionState.anticall && call.status === "offer") {
         try {
           // Rejeter l'appel
           await hani.rejectCall(call.id, call.from);
+          
+          // Mettre à jour le statut dans l'historique
+          if (spyData.callHistory && spyData.callHistory.length > 0) {
+            spyData.callHistory[0].status = 'rejected';
+          }
           
           // Envoyer un message personnalisé à la personne qui appelle
           const callerNumber = call.from?.split("@")[0] || "";
@@ -5334,6 +5827,110 @@ _Ce message a été envoyé automatiquement._`;
           console.log(`[!] Erreur anti-call: ${e.message}`);
         }
       }
+    }
+  });
+
+  // ────────── 🆕 SURVEILLANCE DES GROUPES ──────────
+  hani.ev.on("group-participants.update", async (update) => {
+    if (!spyConfig.trackGroups) return;
+    
+    try {
+      const { id: groupJid, participants, action } = update;
+      
+      // Récupérer les infos du groupe
+      let groupName = "Groupe inconnu";
+      try {
+        const metadata = await hani.groupMetadata(groupJid);
+        groupName = metadata?.subject || groupName;
+      } catch (e) {}
+      
+      for (const participant of participants) {
+        let participantName = "Inconnu";
+        try {
+          const contact = await hani.onWhatsApp(participant);
+          if (contact && contact[0]) {
+            participantName = contact[0].notify || contact[0].name || participant.split("@")[0];
+          }
+        } catch (e) {}
+        
+        const activity = {
+          groupJid,
+          groupName,
+          action,
+          participant,
+          participantName,
+          timestamp: Date.now()
+        };
+        
+        // Ajouter à l'historique
+        if (!spyData.groupActivity) spyData.groupActivity = [];
+        spyData.groupActivity.unshift(activity);
+        if (spyData.groupActivity.length > 200) spyData.groupActivity.pop();
+        
+        // Notification pour l'owner
+        const botNumber = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
+        let emoji, actionText;
+        switch (action) {
+          case 'add': emoji = '➕'; actionText = 'a rejoint'; break;
+          case 'remove': emoji = '➖'; actionText = 'a quitté'; break;
+          case 'promote': emoji = '👑'; actionText = 'promu admin'; break;
+          case 'demote': emoji = '👤'; actionText = 'rétrogradé'; break;
+          default: emoji = '📋'; actionText = action;
+        }
+        
+        const notif = `${emoji} *Activité Groupe*\n\n👥 *${groupName}*\n👤 ${participantName}\n🔄 ${actionText}\n🕐 ${new Date().toLocaleString("fr-FR")}`;
+        await hani.sendMessage(botNumber, { text: notif });
+        
+        console.log(`👥 [GROUP SPY] ${participantName} ${actionText} dans ${groupName}`);
+      }
+    } catch (e) {
+      console.log(`[!] Erreur surveillance groupe: ${e.message}`);
+    }
+  });
+
+  // ────────── 🆕 TRACKER DE PRÉSENCE (CONNEXION/DÉCONNEXION) ──────────
+  hani.ev.on("presence.update", async (update) => {
+    if (!spyConfig.trackLastSeen) return;
+    
+    try {
+      const { id: jid, presences } = update;
+      if (!presences) return;
+      
+      for (const [participantJid, presence] of Object.entries(presences)) {
+        const cleanJid = participantJid.split("@")[0];
+        
+        // Ignorer le bot lui-même
+        const botNumber = hani.user?.id?.split(":")[0];
+        if (cleanJid === botNumber) continue;
+        
+        // Récupérer le nom
+        let name = "Inconnu";
+        try {
+          const contact = await hani.onWhatsApp(participantJid);
+          if (contact && contact[0]) {
+            name = contact[0].notify || contact[0].name || cleanJid;
+          }
+        } catch (e) {}
+        
+        // Initialiser si nécessaire
+        if (!spyData.lastSeen) spyData.lastSeen = {};
+        if (!spyData.lastSeen[participantJid]) {
+          spyData.lastSeen[participantJid] = { name };
+        }
+        
+        // Mettre à jour selon le type de présence
+        if (presence.lastKnownPresence === "available" || presence.lastKnownPresence === "composing" || presence.lastKnownPresence === "recording") {
+          spyData.lastSeen[participantJid].lastOnline = Date.now();
+          spyData.lastSeen[participantJid].isOnline = true;
+          spyData.lastSeen[participantJid].name = name;
+        } else if (presence.lastKnownPresence === "unavailable") {
+          spyData.lastSeen[participantJid].lastOffline = Date.now();
+          spyData.lastSeen[participantJid].isOnline = false;
+          spyData.lastSeen[participantJid].name = name;
+        }
+      }
+    } catch (e) {
+      // Silencieux
     }
   });
 
