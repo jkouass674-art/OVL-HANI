@@ -556,6 +556,48 @@ const scheduledMessages = [];
 // repeatInterval: pour personnalisé (en ms)
 
 let schedulerInterval = null;
+let ghostModeInterval = null; // Intervalle pour maintenir le mode ghost
+
+// 👻 Fonction pour démarrer le mode ghost (maintenir invisible en continu)
+function startGhostMode(hani) {
+  if (ghostModeInterval) return; // Déjà actif
+  
+  // Envoyer immédiatement la présence "unavailable"
+  try {
+    hani.sendPresenceUpdate("unavailable");
+    console.log("👻 [GHOST] Mode fantôme activé - Présence invisible");
+  } catch (e) {
+    console.log("👻 [GHOST] Erreur activation:", e.message);
+  }
+  
+  // Maintenir la présence invisible toutes les 10 secondes
+  ghostModeInterval = setInterval(async () => {
+    if (!spyConfig.ghostMode) {
+      stopGhostMode();
+      return;
+    }
+    try {
+      await hani.sendPresenceUpdate("unavailable");
+    } catch (e) {
+      // Ignorer les erreurs silencieusement
+    }
+  }, 10000); // Toutes les 10 secondes
+}
+
+// 👻 Fonction pour arrêter le mode ghost
+function stopGhostMode(hani) {
+  if (ghostModeInterval) {
+    clearInterval(ghostModeInterval);
+    ghostModeInterval = null;
+    console.log("👻 [GHOST] Mode fantôme désactivé");
+  }
+  // Remettre visible si hani est fourni
+  if (hani) {
+    try {
+      hani.sendPresenceUpdate("available");
+    } catch (e) {}
+  }
+}
 
 // Fonction pour vérifier et envoyer les messages programmés
 function startScheduler(hani) {
@@ -1852,8 +1894,7 @@ async function handleCommand(hani, msg, db) {
     }
 
     case "ghost":
-    case "fantome":
-    case "invisible": {
+    case "fantome": {
       if (!isOwner) return send("❌ Commande réservée à l'owner.");
       
       const param = args?.toLowerCase();
@@ -1865,7 +1906,15 @@ async function handleCommand(hani, msg, db) {
         spyConfig.ghostModeAdvanced.hideRead = true;
         spyConfig.ghostModeAdvanced.hideRecording = true;
         
-        return send(`👻 *MODE FANTÔME ACTIVÉ* ✅\n\n🔒 *Tu es maintenant invisible:*\n• ⚪ Personne ne te voit "en ligne"\n• ✍️ Personne ne voit quand tu écris\n• 👁️ Personne ne voit si tu lis les messages\n• 🎤 Personne ne voit si tu enregistres\n\n⚠️ _Tu peux toujours tout voir des autres!_\n\n💡 \`.ghost off\` pour désactiver`);
+        // 🔥 ACTIVER LE MODE GHOST RÉEL
+        startGhostMode(hani);
+        
+        // Envoyer immédiatement présence unavailable
+        try {
+          await hani.sendPresenceUpdate("unavailable");
+        } catch (e) {}
+        
+        return send(`👻 *MODE FANTÔME ACTIVÉ* ✅\n\n🔒 *Tu es maintenant INVISIBLE:*\n• ⚪ Personne ne te voit "en ligne"\n• ✍️ Personne ne voit quand tu écris\n• 👁️ Tes lectures ne sont pas envoyées\n• 🎤 Personne ne voit si tu enregistres\n\n⚠️ _Mode maintenu en continu!_\n⚠️ _Tu peux toujours tout voir des autres!_\n\n💡 \`.ghost off\` pour désactiver`);
         
       } else if (param === "off" || param === "desactiver") {
         spyConfig.ghostMode = false;
@@ -1874,11 +1923,20 @@ async function handleCommand(hani, msg, db) {
         spyConfig.ghostModeAdvanced.hideRead = false;
         spyConfig.ghostModeAdvanced.hideRecording = false;
         
+        // 🔥 DÉSACTIVER LE MODE GHOST
+        stopGhostMode(hani);
+        
+        // Remettre présence available
+        try {
+          await hani.sendPresenceUpdate("available");
+        } catch (e) {}
+        
         return send(`👻 *MODE FANTÔME DÉSACTIVÉ* ❌\n\n🔓 *Tu es visible normalement:*\n• 🟢 Les autres te voient "en ligne"\n• ✍️ Les autres voient quand tu écris\n• ✅ Les autres voient les confirmations de lecture\n\n💡 \`.ghost on\` pour redevenir invisible`);
         
       } else if (param === "status" || !param) {
         const status = spyConfig.ghostMode ? "✅ ACTIVÉ" : "❌ DÉSACTIVÉ";
-        return send(`👻 *MODE FANTÔME: ${status}*\n\n⚙️ *Configuration:*\n• Cacher "en ligne": ${spyConfig.ghostModeAdvanced.hideOnline ? "✅" : "❌"}\n• Cacher "écrit...": ${spyConfig.ghostModeAdvanced.hideTyping ? "✅" : "❌"}\n• Cacher lecture: ${spyConfig.ghostModeAdvanced.hideRead ? "✅" : "❌"}\n• Cacher enregistrement: ${spyConfig.ghostModeAdvanced.hideRecording ? "✅" : "❌"}\n\n📋 *Commandes:*\n• \`.ghost on\` → Invisible total\n• \`.ghost off\` → Visible normal`);
+        const intervalStatus = ghostModeInterval ? "🟢 En cours" : "⚪ Arrêté";
+        return send(`👻 *MODE FANTÔME: ${status}*\n\n⚙️ *État système:* ${intervalStatus}\n\n⚙️ *Configuration:*\n• Cacher "en ligne": ${spyConfig.ghostModeAdvanced.hideOnline ? "✅" : "❌"}\n• Cacher "écrit...": ${spyConfig.ghostModeAdvanced.hideTyping ? "✅" : "❌"}\n• Cacher lecture: ${spyConfig.ghostModeAdvanced.hideRead ? "✅" : "❌"}\n• Cacher enregistrement: ${spyConfig.ghostModeAdvanced.hideRecording ? "✅" : "❌"}\n\n📋 *Commandes:*\n• \`.ghost on\` → Invisible total\n• \`.ghost off\` → Visible normal`);
       }
       
       return send(`👻 *MODE FANTÔME*\n\n📋 *Usage:*\n• \`.ghost on\` → Activer (invisible)\n• \`.ghost off\` → Désactiver (visible)\n• \`.ghost status\` → Voir l'état`);
@@ -3420,35 +3478,65 @@ Si la personne a masqué sa photo pour tous,
       const param = args?.toLowerCase();
       
       if (param === "off" || param === "invisible" || param === "hide") {
-        // Devenir invisible (offline)
+        // Activer le mode ghost complet
+        spyConfig.ghostMode = true;
+        spyConfig.ghostModeAdvanced.hideOnline = true;
+        spyConfig.ghostModeAdvanced.hideTyping = true;
+        spyConfig.ghostModeAdvanced.hideRead = true;
+        spyConfig.ghostModeAdvanced.hideRecording = true;
+        
+        // Démarrer le maintien de présence invisible
+        startGhostMode(hani);
+        
         await hani.sendPresenceUpdate("unavailable");
         return send(`👻 *Mode INVISIBLE activé!*
 
 ✅ Tu n'apparais plus "en ligne" sur WhatsApp.
-• Les autres ne voient pas quand tu es connecté
-• Tu peux toujours envoyer/recevoir des messages
+• ⚪ Personne ne te voit en ligne
+• ✍️ "Écrit..." n'est pas envoyé
+• ✅ Confirmations de lecture bloquées
+• 🔄 Mode maintenu en continu
+
+⚠️ Tu peux toujours voir les activités des autres!
 
 💡 Utilise \`.invisible on\` pour redevenir visible.`);
       } else if (param === "on" || param === "visible" || param === "show") {
-        // Redevenir visible (online)
+        // Désactiver le mode ghost
+        spyConfig.ghostMode = false;
+        spyConfig.ghostModeAdvanced.hideOnline = false;
+        spyConfig.ghostModeAdvanced.hideTyping = false;
+        spyConfig.ghostModeAdvanced.hideRead = false;
+        spyConfig.ghostModeAdvanced.hideRecording = false;
+        
+        // Arrêter le maintien invisible
+        stopGhostMode(hani);
+        
         await hani.sendPresenceUpdate("available");
         return send(`👁️ *Mode VISIBLE activé!*
 
 ✅ Tu apparais maintenant "en ligne" normalement.
+• 🟢 Les autres te voient en ligne
+• ✍️ "Écrit..." est visible
+• ✅ Confirmations de lecture envoyées
 
 💡 Utilise \`.invisible off\` pour devenir invisible.`);
       } else {
+        const status = spyConfig.ghostMode ? "👻 INVISIBLE" : "👁️ VISIBLE";
+        const intervalStatus = ghostModeInterval ? "🟢 Actif" : "⚪ Inactif";
         return send(`👻 *Gestion de la présence*
+
+📊 *État actuel:* ${status}
+🔄 *Système:* ${intervalStatus}
 
 *Usage:*
 • \`.invisible off\` - Devenir invisible
 • \`.invisible on\` - Redevenir visible
 
-*États possibles:*
-• *Invisible:* Personne ne te voit en ligne
-• *Visible:* Présence normale sur WhatsApp
-
-💡 Par défaut, le bot démarre en mode invisible.`);
+*Ce que fait le mode invisible:*
+• Personne ne te voit "en ligne"
+• "Écrit..." n'est pas envoyé
+• Confirmations de lecture bloquées
+• Mode maintenu en continu automatiquement`);
       }
     }
 
