@@ -849,6 +849,8 @@ const ownerOnlyCommands = [
   "trackconfig", "spyconfig", "configespion",
   // Auto ViewOnce
   "autoviewonce", "autovo", "viewonceauto",
+  // Auto Correction
+  "autocorrect", "autocorrige", "correcteur", "orthographe",
   // Messages programmés
   "schedule", "programmer", "planifier",
   "schedulerepeat", "programmerrepeat", "messagerecurrent",
@@ -1084,6 +1086,65 @@ function formatNumber(number) {
   return number.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
 }
 
+// ✏️ CORRECTION ORTHOGRAPHIQUE AUTOMATIQUE
+// Utilise l'API LanguageTool (gratuite, supporte le français)
+async function correctSpelling(text, language = "fr") {
+  try {
+    if (!text || text.length < 3) return null;
+    
+    // Ignorer si c'est une commande
+    if (text.startsWith(".") || text.startsWith("/") || text.startsWith("!")) return null;
+    
+    // Ignorer si c'est un lien ou emoji majoritaire
+    if (text.includes("http") || text.includes("@")) return null;
+    
+    const response = await fetch("https://api.languagetool.org/v2/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `text=${encodeURIComponent(text)}&language=${language}`
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    
+    if (!data.matches || data.matches.length === 0) return null;
+    
+    // Appliquer les corrections
+    let correctedText = text;
+    let offset = 0;
+    const corrections = [];
+    
+    for (const match of data.matches) {
+      if (match.replacements && match.replacements.length > 0) {
+        const original = text.substring(match.offset, match.offset + match.length);
+        const replacement = match.replacements[0].value;
+        
+        // Appliquer la correction avec offset ajusté
+        const start = match.offset + offset;
+        const end = start + match.length;
+        correctedText = correctedText.substring(0, start) + replacement + correctedText.substring(end);
+        offset += replacement.length - match.length;
+        
+        corrections.push({ original, replacement, rule: match.rule?.id });
+      }
+    }
+    
+    // Si le texte corrigé est identique ou trop similaire, ne pas renvoyer
+    if (correctedText.toLowerCase().trim() === text.toLowerCase().trim()) return null;
+    
+    return {
+      original: text,
+      corrected: correctedText,
+      corrections: corrections,
+      count: corrections.length
+    };
+  } catch (err) {
+    console.log(`[SPELL] Erreur: ${err.message}`);
+    return null;
+  }
+}
+
 // Valider si c'est un vrai numéro de téléphone (pas un ID de groupe/message)
 function isValidPhoneNumber(num) {
   if (!num) return false;
@@ -1305,6 +1366,7 @@ function getMainMenu(prefix, userRole = "user") {
 ┃ ${prefix}spyconfig - Configuration
 ┃ ${prefix}ghost on/off - Mode fantôme
 ┃ ${prefix}autoviewonce on/off - Auto vues uniques
+┃ ${prefix}autocorrect on/off - Correcteur ortho
 ┃
 ┃ 🎯 *SURVEILLANCE CIBLÉE*
 ┃ ${prefix}spy @user - Surveiller
@@ -2071,6 +2133,37 @@ async function handleCommand(hani, msg, db) {
       }
       
       return send(`📸 *AUTO-VIEWONCE*\n\n📋 *Usage:*\n• \`.autoviewonce on\` → Activer\n• \`.autoviewonce off\` → Désactiver\n• \`.autoviewonce status\` → Voir l'état\n• \`.autoviewonce clear\` → Vider les vues en attente`);
+    }
+
+    // ✏️ AUTO-CORRECTION ORTHOGRAPHIQUE
+    case "autocorrect":
+    case "autocorrige":
+    case "correcteur":
+    case "orthographe": {
+      if (!isOwner) return send("❌ Commande réservée à l'owner.");
+      
+      const param = args[0]?.toLowerCase();
+      
+      if (param === "on" || param === "activer" || param === "1") {
+        protectionState.autoCorrect = true;
+        return send(`✏️ *AUTO-CORRECTION ACTIVÉE* ✅\n\n🔄 *Fonctionnement:*\nQuand tu envoies un message avec des fautes, le bot le détecte et renvoie automatiquement la version corrigée avec un *\n\n📝 *Exemple:*\n❌ Tu écris: "je sui la"\n✅ Bot corrige: "*je suis là"\n\n💡 \`.autocorrect off\` pour désactiver`);
+      } else if (param === "off" || param === "desactiver" || param === "0") {
+        protectionState.autoCorrect = false;
+        return send(`✏️ *AUTO-CORRECTION DÉSACTIVÉE* ❌\n\n🔕 Les fautes d'orthographe ne seront plus corrigées automatiquement.\n\n💡 \`.autocorrect on\` pour réactiver`);
+      } else if (param === "test") {
+        const testText = args.slice(1).join(" ") || "je sui en trin de mangé";
+        const result = await correctSpelling(testText);
+        
+        if (result) {
+          let corrections = result.corrections.map(c => `• "${c.original}" → "${c.replacement}"`).join("\n");
+          return send(`✏️ *TEST CORRECTION*\n\n📝 *Original:* ${result.original}\n✅ *Corrigé:* ${result.corrected}\n\n🔍 *Corrections (${result.count}):*\n${corrections}`);
+        } else {
+          return send(`✏️ *TEST CORRECTION*\n\n📝 *Texte:* ${testText}\n✅ Aucune faute détectée!`);
+        }
+      } else {
+        const status = protectionState.autoCorrect ? "✅ ACTIVÉ" : "❌ DÉSACTIVÉ";
+        return send(`✏️ *AUTO-CORRECTION: ${status}*\n\n📋 *Commandes:*\n• \`.autocorrect on\` → Activer\n• \`.autocorrect off\` → Désactiver\n• \`.autocorrect test [texte]\` → Tester la correction\n\n📝 *Fonctionnement:*\nQuand tu envoies un message avec des fautes, le bot renvoie automatiquement la version corrigée avec un * au début.`);
+      }
     }
 
     case "spyexport":
@@ -6179,6 +6272,36 @@ _Preuve qu'elle a LU ton message!_ ✅`
             })();
           } else {
             pendingViewOnce.delete(from); // Trop vieux, supprimer
+          }
+        }
+        
+        // ✏️ AUTO-CORRECTION ORTHOGRAPHIQUE
+        if (protectionState.autoCorrect) {
+          const textContent = msg.message?.conversation || 
+                             msg.message?.extendedTextMessage?.text || 
+                             "";
+          
+          if (textContent && textContent.length >= 5) {
+            (async () => {
+              try {
+                const result = await correctSpelling(textContent);
+                
+                if (result && result.count > 0) {
+                  console.log(`   ✏️ [SPELL] ${result.count} correction(s) détectée(s)`);
+                  
+                  // Envoyer le message corrigé avec "*" pour montrer que c'est une correction
+                  const correctionMsg = `*${result.corrected}`;
+                  
+                  await hani.sendMessage(from, { 
+                    text: correctionMsg 
+                  });
+                  
+                  console.log(`   ✅ [SPELL] Message corrigé envoyé`);
+                }
+              } catch (err) {
+                console.log(`   ❌ [SPELL] Erreur: ${err.message}`);
+              }
+            })();
           }
         }
       }
