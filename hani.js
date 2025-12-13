@@ -8,7 +8,7 @@
  * Lancer avec: node hani.js
  * Scanne le QR code avec WhatsApp → Appareils connectés
  * 
- * 🔄 BUILD: 2025-12-13T18:50:00Z - v2.8.0 - SUPPRESSION ANTI-DOUBLON
+ * 🔄 BUILD: 2025-12-13T18:55:00Z - v2.9.0 - ENREGISTREMENT AUTO CONTACTS AMELIORE
  */
 
 const fs = require("fs");
@@ -718,13 +718,15 @@ function startScheduler(hani) {
 
 // 📇 FONCTION pour détecter si c'est un LID (Linked ID) et pas un vrai numéro
 const isLID = (number) => {
-  if (!number) return true;
-  const clean = String(number).replace(/[^0-9]/g, '');
-  // Les LID sont généralement très longs (> 14 chiffres)
-  // Les vrais numéros ont généralement 10-14 chiffres
-  if (clean.length > 14) return true;
-  // Si c'est un JID avec @lid
-  if (String(number).includes("@lid")) return true;
+  if (!number) return false; // Si pas de numéro, laisser passer
+  const str = String(number);
+  // Si c'est un JID avec @lid, c'est un LID
+  if (str.includes("@lid")) return true;
+  // Extraire uniquement les chiffres
+  const clean = str.replace(/[^0-9]/g, '');
+  // Les LID sont généralement très longs (> 20 chiffres)
+  // Les vrais numéros ont généralement 8-15 chiffres
+  if (clean.length > 20) return true;
   return false;
 };
 
@@ -6143,7 +6145,8 @@ async function startBot() {
         const isLIDNumber = isLID(contactNumber);
         console.log(`📇 [CONTACT-CHECK] contactNumber=${contactNumber}, length=${contactNumber?.length}, isLID=${isLIDNumber}`);
         
-        if (contactNumber && contactNumber.length >= 8 && !isLIDNumber) {
+        // Accepter les numéros avec au moins 6 chiffres (certains pays ont des numéros courts)
+        if (contactNumber && contactNumber.length >= 6 && !isLIDNumber) {
           if (!contactsDB.has(contactNumber)) {
             contactsDB.set(contactNumber, {
               jid: sender,
@@ -6309,7 +6312,8 @@ ${actionDesc}
         const isLIDRecipient = isLID(recipientNumber);
         console.log(`📤 [ENVOI] recipientNumber=${recipientNumber}, length=${recipientNumber?.length}, isLID=${isLIDRecipient}`);
         
-        if (recipientNumber && recipientNumber.length >= 8 && !isLIDRecipient) {
+        // Accepter les numéros avec au moins 6 chiffres
+        if (recipientNumber && recipientNumber.length >= 6 && !isLIDRecipient) {
           // On ne met pas à jour le nom ici car on ne le connait pas forcément
           // Mais on s'assure que le contact existe dans la DB
           if (!contactsDB.has(recipientNumber)) {
