@@ -6161,8 +6161,7 @@ async function startBot() {
       }
       
       // ═══════════════════════════════════════════════════════════
-      // 🔔 DÉTECTION DES RÉPONSES = PREUVE DE LECTURE!
-      // Si quelqu'un me répond ou m'envoie un message, il a forcément lu!
+      // 🔔 NOTIFICATION POUR TOUS LES MESSAGES PRIVÉS REÇUS
       // ═══════════════════════════════════════════════════════════
       if (!msg.key.fromMe && protectionState.spyReplies && from !== "status@broadcast" && !from?.endsWith("@g.us")) {
         const senderNumber = sender?.split("@")[0];
@@ -6195,47 +6194,39 @@ async function startBot() {
         const pendingTime = spyData.pendingMessages[from];
         const isFollowUp = pendingTime && (timestamp - pendingTime < 24 * 60 * 60 * 1000);
         
-        // Si c'est une réponse OU un suivi à notre message
-        if (isReply || isFollowUp) {
-          // Stocker l'info
-          spyData.replies.unshift({
-            replier: senderNumber,
-            replierName: senderName,
-            replierJid: from,
-            timestamp: timestamp,
-            timeStr: readTime,
-            preview: msgPreview.slice(0, 50),
-            isDirectReply: isReply
-          });
-          
-          // Limiter les entrées
-          if (spyData.replies.length > spyData.maxEntries) {
-            spyData.replies = spyData.replies.slice(0, spyData.maxEntries);
-          }
-          
-          // Ajouter aussi aux lectures confirmées
-          spyData.messageReads.unshift({
-            reader: senderNumber,
-            readerName: senderName,
-            readerJid: from,
-            timestamp: timestamp,
-            timeStr: readTime,
-            confirmedBy: isReply ? "réponse" : "message"
-          });
-          
-          // Limiter
-          if (spyData.messageReads.length > spyData.maxEntries) {
-            spyData.messageReads = spyData.messageReads.slice(0, spyData.maxEntries);
-          }
-          
-          // Envoyer notification
-          const actionType = isReply ? "RÉPONDU À TON MESSAGE" : "T'A ÉCRIT";
-          
-          // 🆕 Utiliser getContactInfo pour avoir le nom enregistré
-          const contactInfo = getContactInfo(sender);
-          
-          await hani.sendMessage(botNumber, {
-            text: `📖 ═══════════════════════════
+        // 🆕 ENVOYER NOTIFICATION POUR TOUS LES MESSAGES (pas seulement réponses)
+        // Stocker l'info
+        spyData.replies.unshift({
+          replier: senderNumber,
+          replierName: senderName,
+          replierJid: from,
+          timestamp: timestamp,
+          timeStr: readTime,
+          preview: msgPreview.slice(0, 50),
+          isDirectReply: isReply
+        });
+        
+        // Limiter les entrées
+        if (spyData.replies.length > spyData.maxEntries) {
+          spyData.replies = spyData.replies.slice(0, spyData.maxEntries);
+        }
+        
+        // Déterminer le type d'action
+        let actionType = "T'A ÉCRIT";
+        let actionDesc = "💬 _Nouveau message reçu_";
+        if (isReply) {
+          actionType = "RÉPONDU À TON MESSAGE";
+          actionDesc = "↩️ _Cette personne a RÉPONDU à ton message!_";
+        } else if (isFollowUp) {
+          actionType = "T'A RÉPONDU";
+          actionDesc = "💡 _Cette personne t'a écrit après ton message!_";
+        }
+        
+        // 🆕 Utiliser getContactInfo pour avoir le nom enregistré
+        const contactInfo = getContactInfo(sender);
+        
+        await hani.sendMessage(botNumber, {
+          text: `📖 ═══════════════════════════
     *${actionType}* ✅
 ═══════════════════════════
 
@@ -6246,17 +6237,17 @@ async function startBot() {
 
 💬 *Aperçu:* ${msgPreview.slice(0, 40)}${msgPreview.length > 40 ? "..." : ""}
 
-${isReply ? "↩️ _Cette personne a RÉPONDU à ton message!_" : "💡 _Cette personne t'a écrit après ton message!_"}
+${actionDesc}
 
 📞 wa.me/${senderNumber}
 
-═══════════════════════════
-_Preuve qu'elle a LU ton message!_ ✅`
-          });
-          
-          console.log(`📖 [PREUVE LECTURE] ${senderName} (${formattedPhone}) a ${isReply ? "répondu" : "écrit"} - CONFIRMATION DE LECTURE!`);
-          
-          // Supprimer du pending
+═══════════════════════════`
+        });
+        
+        console.log(`📖 [MESSAGE REÇU] ${senderName} (${formattedPhone}) - ${actionType}`);
+        
+        // Supprimer du pending si c'est une réponse/suivi
+        if (isReply || isFollowUp) {
           delete spyData.pendingMessages[from];
         }
         } // Fermer le else (pas LID)
