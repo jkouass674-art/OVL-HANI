@@ -6238,8 +6238,11 @@ async function startBot() {
         // 🆕 Utiliser getContactInfo pour avoir le nom enregistré
         const contactInfo = getContactInfo(sender);
         
-        await hani.sendMessage(botNumber, {
-          text: `📖 ═══════════════════════════
+        console.log(`📨 [NOTIF] Envoi notification "${actionType}" de ${contactInfo} vers ${botNumber}`);
+        
+        try {
+          await hani.sendMessage(botNumber, {
+            text: `📖 ═══════════════════════════
     *${actionType}* ✅
 ═══════════════════════════
 
@@ -6255,7 +6258,11 @@ ${actionDesc}
 📞 wa.me/${senderNumber}
 
 ═══════════════════════════`
-        });
+          });
+          console.log(`✅ [NOTIF] Notification envoyée avec succès`);
+        } catch (notifErr) {
+          console.log(`❌ [NOTIF] Erreur envoi notification: ${notifErr.message}`);
+        }
         
         console.log(`📖 [MESSAGE REÇU] ${senderName} (${formattedPhone}) - ${actionType}`);
         
