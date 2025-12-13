@@ -956,6 +956,30 @@ function getContactName(numberOrJid) {
   return formatPhoneNumber(number);
 }
 
+// 🆕 OBTENIR INFOS COMPLÈTES D'UN CONTACT (Nom + Numéro)
+// Retourne "Nom (numéro formaté)" ou juste le numéro si pas de nom
+function getContactInfo(numberOrJid) {
+  if (!numberOrJid) return "Inconnu";
+  
+  const number = numberOrJid.split("@")[0]?.replace(/[^0-9]/g, "");
+  if (!number) return "Inconnu";
+  
+  const contact = contactsDB.get(number);
+  const formattedNum = formatPhoneNumber(number);
+  
+  if (contact && contact.name && contact.name !== "Inconnu" && contact.name.length > 1) {
+    return `${contact.name} (${formattedNum})`;
+  }
+  
+  // Essayer le cache secondaire
+  const cachedName = contactNameCache.get(number) || contactNameCache.get(numberOrJid);
+  if (cachedName && cachedName !== "Inconnu" && cachedName.length > 1) {
+    return `${cachedName} (${formattedNum})`;
+  }
+  
+  return formattedNum;
+}
+
 // Lister tous les contacts
 function getAllContacts() {
   return Array.from(contactsDB.values());
@@ -5789,18 +5813,17 @@ async function startBot() {
           // Envoyer notification à moi-même
           const botJid = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
           
-          // Message avec numéro très visible
-          const displayName = viewerName || "Contact inconnu";
-          const nameInfo = viewerName ? `👤 *Nom:* ${viewerName}` : `👤 *Contact:* Non enregistré`;
+          // 🆕 Utiliser getContactInfo pour avoir le nom enregistré
+          const contactInfo = getContactInfo(viewerJid);
           
           await hani.sendMessage(botJid, {
             text: `👁️ ═══════════════════════
     *QUELQU'UN A VU TON STATUT*
 ═══════════════════════
 
-${nameInfo}
+👤 *Contact:* ${contactInfo}
+📝 *Nom WA:* ${viewerName || "Non enregistré"}
 📱 *Numéro:* ${formattedPhone}
-🔢 *Brut:* ${viewerNumber}
 🕐 *Heure:* ${readTime}
 
 📞 *Appelle:* wa.me/${viewerNumber}
@@ -6035,6 +6058,37 @@ ${nameInfo}
       const botNumber = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
       const senderName = msg.pushName || "Inconnu";
       
+      // 🆕 ENREGISTRER LE CONTACT QUAND QUELQU'UN M'ENVOIE UN MESSAGE
+      // Cela permet de sauvegarder son nom WhatsApp pour l'utiliser plus tard
+      if (!msg.key.fromMe && sender && !from?.endsWith("@g.us")) {
+        const contactNumber = sender.split("@")[0];
+        if (contactNumber && contactNumber.length >= 8 && !isLID(contactNumber)) {
+          if (!contactsDB.has(contactNumber)) {
+            contactsDB.set(contactNumber, {
+              jid: sender,
+              number: contactNumber,
+              name: senderName !== "Inconnu" ? senderName : "Inconnu",
+              formattedNumber: formatPhoneNumber(contactNumber),
+              firstSeen: new Date().toLocaleString("fr-FR"),
+              lastSeen: new Date().toLocaleString("fr-FR"),
+              messageCount: 1,
+              isBlocked: false,
+              notes: ""
+            });
+            if (senderName !== "Inconnu") {
+              console.log(`📇 [CONTACT] Nouveau: ${senderName} (${formatPhoneNumber(contactNumber)})`);
+            }
+          } else {
+            const contact = contactsDB.get(contactNumber);
+            if (senderName && senderName !== "Inconnu" && senderName.length > 1) {
+              contact.name = senderName; // Mettre à jour le nom
+            }
+            contact.lastSeen = new Date().toLocaleString("fr-FR");
+            contact.messageCount++;
+          }
+        }
+      }
+      
       // ═══════════════════════════════════════════════════════════
       // 🔔 DÉTECTION DES RÉPONSES = PREUVE DE LECTURE!
       // Si quelqu'un me répond ou m'envoie un message, il a forcément lu!
@@ -6106,14 +6160,17 @@ ${nameInfo}
           // Envoyer notification
           const actionType = isReply ? "RÉPONDU À TON MESSAGE" : "T'A ÉCRIT";
           
+          // 🆕 Utiliser getContactInfo pour avoir le nom enregistré
+          const contactInfo = getContactInfo(sender);
+          
           await hani.sendMessage(botNumber, {
             text: `📖 ═══════════════════════════
     *${actionType}* ✅
 ═══════════════════════════
 
-👤 *Nom:* ${senderName}
+👤 *Contact:* ${contactInfo}
+📝 *Nom WhatsApp:* ${senderName}
 📱 *Numéro:* ${formattedPhone}
-🔢 *Brut:* ${senderNumber}
 🕐 *Quand:* ${readTime}
 
 💬 *Aperçu:* ${msgPreview.slice(0, 40)}${msgPreview.length > 40 ? "..." : ""}
@@ -6138,6 +6195,31 @@ _Preuve qu'elle a LU ton message!_ ✅`
       if (msg.key.fromMe && from !== "status@broadcast" && !from?.endsWith("@g.us")) {
         spyData.pendingMessages[from] = Date.now();
         
+        // 🆕 ENREGISTRER LE CONTACT QUAND J'ENVOIE UN MESSAGE
+        // Cela permet de retrouver le nom plus tard
+        const recipientNumber = from.split("@")[0];
+        if (recipientNumber && recipientNumber.length >= 8 && !isLID(recipientNumber)) {
+          // On ne met pas à jour le nom ici car on ne le connait pas forcément
+          // Mais on s'assure que le contact existe dans la DB
+          if (!contactsDB.has(recipientNumber)) {
+            contactsDB.set(recipientNumber, {
+              jid: from,
+              number: recipientNumber,
+              name: "Inconnu",
+              formattedNumber: formatPhoneNumber(recipientNumber),
+              firstSeen: new Date().toLocaleString("fr-FR"),
+              lastSeen: new Date().toLocaleString("fr-FR"),
+              messageCount: 1,
+              isBlocked: false,
+              notes: ""
+            });
+          } else {
+            const contact = contactsDB.get(recipientNumber);
+            contact.lastSeen = new Date().toLocaleString("fr-FR");
+            contact.messageCount++;
+          }
+        }
+        
         // 🔄 AUTO-ENVOI VIEWONCE: Quand je réponds à quelqu'un qui m'a envoyé un viewonce
         if (protectionState.autoSendViewOnce && pendingViewOnce.has(from)) {
           const storedViewOnce = pendingViewOnce.get(from);
@@ -6145,7 +6227,9 @@ _Preuve qu'elle a LU ton message!_ ✅`
           const maxDelay = 24 * 60 * 60 * 1000; // 24h max
           
           if (timeSince <= maxDelay) {
-            console.log(`   🔄 [AUTO-VIEWONCE] Tu réponds à ${storedViewOnce.senderName}, envoi du viewonce...`);
+            // 🆕 Utiliser getContactInfo pour avoir le nom complet
+            const contactInfo = getContactInfo(storedViewOnce.from);
+            console.log(`   🔄 [AUTO-VIEWONCE] Tu réponds à ${contactInfo}, envoi du viewonce...`);
             
             // Envoyer le viewonce à moi-même
             (async () => {
@@ -6156,7 +6240,7 @@ _Preuve qu'elle a LU ton message!_ ✅`
                   {}
                 );
                 
-                const caption = `📸 *ViewOnce de ${storedViewOnce.senderName}*\n📅 Reçu il y a ${Math.round(timeSince / 60000)} min`;
+                const caption = `📸 *ViewOnce de ${contactInfo}*\n📅 Reçu il y a ${Math.round(timeSince / 60000)} min`;
                 
                 if (storedViewOnce.mediaType === "image") {
                   await hani.sendMessage(botNumber + "@s.whatsapp.net", {
