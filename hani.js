@@ -8,7 +8,7 @@
  * Lancer avec: node hani.js
  * Scanne le QR code avec WhatsApp → Appareils connectés
  * 
- * 🔄 BUILD: 2025-12-13T19:00:00Z - v3.0.0 - LIMITE 13 CHIFFRES MAX
+ * 🔄 BUILD: 2025-12-13T19:10:00Z - v3.1.0 - FIX NOTIFICATIONS PRESENCE + LECTURE
  */
 
 const fs = require("fs");
@@ -5960,8 +5960,11 @@ async function startBot() {
             // 🆕 Utiliser getContactInfo pour nom + numéro
             const contactInfo = getContactInfo(recipientJid);
             
-            await hani.sendMessage(botJid, {
-              text: `📖 ═══════════════════════
+            console.log(`📖 [LECTURE] Envoi notification vers ${botJid}`);
+            
+            try {
+              await hani.sendMessage(botJid, {
+                text: `📖 ═══════════════════════
     *MESSAGE LU PAR*
 ═══════════════════════
 
@@ -5973,7 +5976,11 @@ async function startBot() {
 💬 *Écris:* wa.me/${recipientNumber}
 
 ═══════════════════════`
-            });
+              });
+              console.log(`✅ [LECTURE] Notification envoyée!`);
+            } catch (readErr) {
+              console.log(`❌ [LECTURE] Erreur: ${readErr.message}`);
+            }
           }
           
           console.log(`📖 [MESSAGE LU] ${recipientName || recipientNumber} (${formattedPhone}) a lu ton message`);
@@ -6093,11 +6100,11 @@ async function startBot() {
             spyData.presenceDetected = spyData.presenceDetected.slice(-spyData.maxEntries);
           }
           
-          // Envoyer notification au owner
-          const ownerJid = config.NUMERO_OWNER.split(",")[0] + "@s.whatsapp.net";
+          // Envoyer notification à moi-même (botNumber)
+          console.log(`👁️ [PRESENCE] Envoi notification vers ${botNumber}`);
           
           const notificationMsg = `╔═══════════════════════════════╗
-║   🕵️ PRÉSENCE DÉTECTÉE 🕵️   ║
+║   👁️ PRÉSENCE DÉTECTÉE 👁️   ║
 ╠═══════════════════════════════╣
 ║ ${actionEmoji} Quelqu'un ${actionText}!
 ╠═══════════════════════════════╣
@@ -6110,8 +6117,13 @@ async function startBot() {
 ║    votre discussion privée!
 ╚═══════════════════════════════╝`;
 
-          await hani.sendMessage(ownerJid, { text: notificationMsg });
-          console.log(`🕵️ Présence détectée: ${contactName} (${participantNumber}) - ${lastKnownPresence}`);
+          try {
+            await hani.sendMessage(botNumber, { text: notificationMsg });
+            console.log(`✅ [PRESENCE] Notification envoyée!`);
+          } catch (presErr) {
+            console.log(`❌ [PRESENCE] Erreur: ${presErr.message}`);
+          }
+          console.log(`👁️ Présence détectée: ${contactName} (${participantNumber}) - ${lastKnownPresence}`);
         }
       }
     } catch (e) {
