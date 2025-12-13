@@ -5725,6 +5725,31 @@ async function startBot() {
 `);
       db.data.stats.startTime = Date.now();
       db.save();
+      
+      // 🔔 Envoyer notification de connexion dans "Moi-même"
+      try {
+        const botJid = hani.user?.id?.split(":")[0] + "@s.whatsapp.net";
+        await hani.sendMessage(botJid, {
+          text: `✅ *HANI-MD CONNECTÉ !*
+          
+🤖 Bot: ${hani.user?.name || "HANI-MD"}
+📱 Numéro: +${hani.user?.id?.split(":")[0]}
+⚙️ Préfixe: ${config.PREFIXE}
+🕐 Connecté le: ${new Date().toLocaleString("fr-FR")}
+
+🛡️ *Protections actives:*
+• Anti-delete messages ✅
+• Vue unique auto ✅
+• Anti-suppression statuts ✅
+• Notifications lecture ✅
+• Détection présence ✅
+
+📝 Tape *${config.PREFIXE}menu* pour les commandes`
+        });
+        console.log("[OK] Notification de connexion envoyée dans Moi-même");
+      } catch (e) {
+        console.log("[!] Erreur envoi notification connexion:", e.message);
+      }
     }
 
     if (connection === "close") {
