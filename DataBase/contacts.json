@@ -1,0 +1,78 @@
+{
+  "26611650924794": {
+    "jid": "26611650924794@lid",
+    "number": "26611650924794",
+    "name": "Inconnu",
+    "formattedNumber": "+26611650924794",
+    "firstSeen": "29/12/2025 01:44:39",
+    "lastSeen": "29/12/2025 01:44:39",
+    "messageCount": 2,
+    "isBlocked": false,
+    "notes": "",
+    "lastActivity": "audioMessage",
+    "lastChat": "26611650924794@lid"
+  },
+  "22550252467": {
+    "jid": "22550252467@s.whatsapp.net",
+    "number": "22550252467",
+    "name": "Inconnu",
+    "formattedNumber": "+22550252467",
+    "firstSeen": "29/12/2025 01:44:43",
+    "lastSeen": "29/12/2025 01:49:35",
+    "messageCount": 7,
+    "isBlocked": false,
+    "notes": ""
+  },
+  "70549753565246": {
+    "jid": "70549753565246@lid",
+    "number": "70549753565246",
+    "name": "Maurelle",
+    "formattedNumber": "+70549753565246",
+    "firstSeen": "29/12/2025 01:45:11",
+    "lastSeen": "29/12/2025 01:45:57",
+    "messageCount": 2,
+    "isBlocked": false,
+    "notes": "",
+    "lastActivity": "extendedTextMessage",
+    "lastChat": "70549753565246@lid"
+  },
+  "246020441145558": {
+    "jid": "246020441145558@lid",
+    "number": "246020441145558",
+    "name": "Syntiche 🌸",
+    "formattedNumber": "+246020441145558",
+    "firstSeen": "29/12/2025 01:45:17",
+    "lastSeen": "29/12/2025 01:53:46",
+    "messageCount": 4,
+    "isBlocked": false,
+    "notes": "",
+    "lastActivity": "conversation",
+    "lastChat": "246020441145558@lid"
+  },
+  "64837262565538": {
+    "jid": "64837262565538@lid",
+    "number": "64837262565538",
+    "name": "ㄒ尺ㄚ卩卄卂丨几乇 ❤️❤️!",
+    "formattedNumber": "+64837262565538",
+    "firstSeen": "29/12/2025 01:45:51",
+    "lastSeen": "29/12/2025 01:45:51",
+    "messageCount": 0,
+    "isBlocked": false,
+    "notes": "",
+    "lastActivity": "stickerMessage",
+    "lastChat": "64837262565538@lid"
+  },
+  "6855422144644": {
+    "jid": "6855422144644@lid",
+    "number": "6855422144644",
+    "name": "Chris",
+    "formattedNumber": "+6855422144644",
+    "firstSeen": "29/12/2025 01:45:52",
+    "lastSeen": "29/12/2025 01:45:52",
+    "messageCount": 0,
+    "isBlocked": false,
+    "notes": "",
+    "lastActivity": "protocolMessage",
+    "lastChat": "120363404635307998@g.us"
+  }
+}
