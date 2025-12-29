@@ -1,0 +1,16 @@
+# Configuration Nixpacks pour Railway
+[phases.setup]
+nixPkgs = ["nodejs_20", "ffmpeg", "git", "python3"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["npm rebuild sharp"]
+
+[start]
+cmd = "node hani.js"
+
+[variables]
+NODE_ENV = "production"
+NPM_CONFIG_PRODUCTION = "false"
