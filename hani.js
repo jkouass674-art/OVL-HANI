@@ -6751,6 +6751,80 @@ ${actionDesc}
         }
       }
       
+      // ═══════════════════════════════════════════════════════════
+      // 🕵️ SURVEILLANCE DES UTILISATEURS CIBLÉS
+      // ═══════════════════════════════════════════════════════════
+      if (!msg.key.fromMe && sender) {
+        try {
+          const survFile = path.join(__dirname, "DataBase/surveillance.json");
+          let surveillanceList = [];
+          
+          if (fs.existsSync(survFile)) {
+            surveillanceList = JSON.parse(fs.readFileSync(survFile, "utf8"));
+          }
+          
+          // Vérifier si l'expéditeur est sous surveillance
+          if (surveillanceList.includes(sender)) {
+            const texte = msg.message?.conversation || 
+                          msg.message?.extendedTextMessage?.text || 
+                          msg.message?.imageMessage?.caption ||
+                          msg.message?.videoMessage?.caption ||
+                          (msg.message?.audioMessage ? "🎵 Audio/Vocal" : "") ||
+                          (msg.message?.imageMessage ? "📷 Photo" : "") ||
+                          (msg.message?.videoMessage ? "🎬 Vidéo" : "") ||
+                          (msg.message?.stickerMessage ? "🎴 Sticker" : "") ||
+                          (msg.message?.documentMessage ? "📄 Document" : "") ||
+                          (msg.message?.contactMessage ? "👤 Contact" : "") ||
+                          (msg.message?.locationMessage ? "📍 Localisation" : "") ||
+                          "📩 Message";
+            
+            const isGroup = from?.endsWith("@g.us");
+            let groupName = "Privé";
+            if (isGroup) {
+              try {
+                const metadata = await hani.groupMetadata(from);
+                groupName = metadata.subject || "Groupe";
+              } catch (e) {}
+            }
+            
+            const timestamp = new Date().toLocaleString("fr-FR");
+            const senderNum = sender.split("@")[0];
+            
+            // Envoyer notification au propriétaire
+            const OWNER = config.NUMERO_OWNER ? 
+              config.NUMERO_OWNER.replace(/[^0-9]/g, '') + "@s.whatsapp.net" : 
+              hani.user.id.split(":")[0] + "@s.whatsapp.net";
+            
+            const spyNotif = `
+🕵️ ═══════════════════════════
+   *ALERTE SURVEILLANCE*
+═══════════════════════════
+
+👤 *Cible:* @${senderNum}
+📛 *Nom:* ${senderName}
+📍 *Lieu:* ${isGroup ? groupName : "Message privé"}
+🕐 *Heure:* ${timestamp}
+
+💬 *Message:*
+${texte.slice(0, 200)}${texte.length > 200 ? "..." : ""}
+
+📞 wa.me/${senderNum}
+═══════════════════════════`;
+            
+            await hani.sendMessage(OWNER, { text: spyNotif }, { mentions: [sender] });
+            console.log(`🕵️ [SURVEILLANCE] Activité détectée de ${senderNum}`);
+            
+            // Logger dans MySQL si disponible
+            try {
+              const db = require("./DataBase/mysql");
+              await db.logActivity(sender, isGroup ? "group_message" : "private_message", texte.slice(0, 500));
+            } catch (e) {}
+          }
+        } catch (survErr) {
+          console.log(`⚠️ [SURVEILLANCE] Erreur: ${survErr.message}`);
+        }
+      }
+      
       // 🤖 PROTECTION ANTI-BOT DÉSACTIVÉE
       
       // ═══════════════════════════════════════════════════════════

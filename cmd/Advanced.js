@@ -1135,4 +1135,738 @@ pas non plus les infos des autres.`;
   }
 });
 
-console.log("✅ Advanced Commands loaded - HANI-MD V3.0");
+// ═══════════════════════════════════════════════════════════
+// 🕵️ ESPIONNAGE & SURVEILLANCE (FONCTIONNEL)
+// ═══════════════════════════════════════════════════════════
+
+ovlcmd({
+  nom_cmd: "spy",
+  classe: "🕵️ Espionnage",
+  react: "🔍",
+  desc: "Active la surveillance d'un utilisateur. Usage: .spy @user",
+  alias: ["espion", "surveiller", "track"]
+}, async (hani, ms, { repondre, superUser, arg }) => {
+  if (!superUser) return repondre("❌ Réservé au propriétaire.");
+  
+  // Récupérer la cible
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else if (arg[0]) {
+    target = arg[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+  } else {
+    return repondre("❌ Usage: .spy @user ou .spy numéro");
+  }
+  
+  try {
+    // Ajouter à la liste de surveillance dans MySQL
+    const added = await db.addToSurveillance(target);
+    
+    // Aussi sauvegarder en local
+    const spyFile = path.join(__dirname, '../DataBase/surveillance.json');
+    let spyList = [];
+    if (fs.existsSync(spyFile)) {
+      spyList = JSON.parse(fs.readFileSync(spyFile));
+    }
+    
+    const num = target.split('@')[0];
+    if (!spyList.includes(target)) {
+      spyList.push(target);
+      fs.writeFileSync(spyFile, JSON.stringify(spyList, null, 2));
+    }
+    
+    await repondre(`🕵️ *Surveillance Activée*
+
+👤 Cible: @${num}
+📊 Statut: ${added ? 'Ajouté à la base' : 'Déjà en surveillance'}
+
+📋 Les messages de cette personne seront:
+• Loggés automatiquement
+• Notifications à chaque activité
+• Statistiques d'activité collectées
+
+⚠️ Commandes associées:
+• .spylist - Voir toutes les cibles
+• .unspy @user - Arrêter la surveillance
+• .spyactivity @user - Voir l'activité`, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "unspy",
+  classe: "🕵️ Espionnage",
+  react: "❌",
+  desc: "Arrête la surveillance d'un utilisateur",
+  alias: ["stopspy", "desurveiller"]
+}, async (hani, ms, { repondre, superUser, arg }) => {
+  if (!superUser) return repondre("❌ Réservé au propriétaire.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else if (arg[0]) {
+    target = arg[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+  } else {
+    return repondre("❌ Usage: .unspy @user");
+  }
+  
+  try {
+    await db.removeFromSurveillance(target);
+    
+    // Retirer du fichier local
+    const spyFile = path.join(__dirname, '../DataBase/surveillance.json');
+    if (fs.existsSync(spyFile)) {
+      let spyList = JSON.parse(fs.readFileSync(spyFile));
+      spyList = spyList.filter(jid => jid !== target);
+      fs.writeFileSync(spyFile, JSON.stringify(spyList, null, 2));
+    }
+    
+    await repondre(`✅ Surveillance arrêtée pour @${target.split('@')[0]}`, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "spylist",
+  classe: "🕵️ Espionnage",
+  react: "📋",
+  desc: "Affiche la liste des personnes surveillées",
+  alias: ["listspy", "surveillancelist"]
+}, async (hani, ms, { repondre, superUser }) => {
+  if (!superUser) return repondre("❌ Réservé au propriétaire.");
+  
+  try {
+    // Récupérer de MySQL
+    const dbList = await db.getSurveillanceList();
+    
+    // Aussi du fichier local
+    const spyFile = path.join(__dirname, '../DataBase/surveillance.json');
+    let localList = [];
+    if (fs.existsSync(spyFile)) {
+      localList = JSON.parse(fs.readFileSync(spyFile));
+    }
+    
+    // Combiner les deux listes
+    const allJids = [...new Set([...dbList.map(r => r.jid), ...localList])];
+    
+    if (allJids.length === 0) {
+      return repondre("📋 Aucune personne sous surveillance.");
+    }
+    
+    let message = `
+╔══════════════════════════════╗
+║   🕵️ LISTE DE SURVEILLANCE   ║
+╠══════════════════════════════╣
+║ Total: ${allJids.length} cible(s)
+╠══════════════════════════════╣\n`;
+    
+    for (const jid of allJids) {
+      const num = jid.split('@')[0];
+      const stats = dbList.find(r => r.jid === jid);
+      const msgs = stats?.total_messages || 0;
+      message += `║ 👤 @${num}\n`;
+      message += `║    📊 Messages: ${msgs}\n`;
+    }
+    
+    message += `╚══════════════════════════════╝`;
+    
+    await repondre(message, { mentions: allJids });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "spyactivity",
+  classe: "🕵️ Espionnage",
+  react: "📊",
+  desc: "Voir l'activité récente d'un utilisateur surveillé",
+  alias: ["activity", "activite"]
+}, async (hani, ms, { repondre, superUser, arg }) => {
+  if (!superUser) return repondre("❌ Réservé au propriétaire.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else if (arg[0]) {
+    target = arg[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+  } else {
+    return repondre("❌ Usage: .spyactivity @user");
+  }
+  
+  try {
+    const activity = await db.getActivity(target, 20);
+    
+    if (activity.length === 0) {
+      return repondre(`📊 Aucune activité enregistrée pour @${target.split('@')[0]}`, { mentions: [target] });
+    }
+    
+    let message = `
+╔══════════════════════════════╗
+║   📊 ACTIVITÉ DE @${target.split('@')[0].slice(0, 12)}
+╠══════════════════════════════╣\n`;
+    
+    for (const act of activity.slice(0, 10)) {
+      const time = new Date(act.timestamp).toLocaleString('fr-FR');
+      message += `║ ${act.action_type}: ${act.details?.slice(0, 30) || 'N/A'}\n`;
+      message += `║ 🕐 ${time}\n║ ──────────────────────\n`;
+    }
+    
+    message += `╚══════════════════════════════╝`;
+    
+    await repondre(message, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// 👮 GESTION UTILISATEURS (FONCTIONNEL AVEC MYSQL)
+// ═══════════════════════════════════════════════════════════
+
+ovlcmd({
+  nom_cmd: "ban",
+  classe: "👮 Modération",
+  react: "🚫",
+  desc: "Bannit un utilisateur des commandes du bot. Usage: .ban @user",
+  alias: ["bannir", "block"]
+}, async (hani, ms, { repondre, superUser, arg }) => {
+  if (!superUser) return repondre("❌ Réservé au propriétaire.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else if (arg[0]) {
+    target = arg[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+  } else {
+    return repondre("❌ Usage: .ban @user ou .ban numéro");
+  }
+  
+  try {
+    // Vérifier si déjà banni
+    const isBanned = await db.isBanned(target);
+    if (isBanned) {
+      return repondre(`❌ @${target.split('@')[0]} est déjà banni!`, { mentions: [target] });
+    }
+    
+    // Bannir dans MySQL
+    await db.banUser(target);
+    
+    // Aussi en local pour backup
+    const banFile = path.join(__dirname, '../DataBase/banned.json');
+    let bannedList = [];
+    if (fs.existsSync(banFile)) {
+      bannedList = JSON.parse(fs.readFileSync(banFile));
+    }
+    if (!bannedList.includes(target)) {
+      bannedList.push(target);
+      fs.writeFileSync(banFile, JSON.stringify(bannedList, null, 2));
+    }
+    
+    await repondre(`
+╔══════════════════════════════╗
+║      🚫 UTILISATEUR BANNI    ║
+╠══════════════════════════════╣
+║ 👤 @${target.split('@')[0]}
+║ 📛 Statut: BANNI
+║ ⛔ Ne peut plus utiliser les
+║    commandes du bot
+╠══════════════════════════════╣
+║ ↩️ Pour débannir: .unban @user
+╚══════════════════════════════╝`, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "unban",
+  classe: "👮 Modération",
+  react: "✅",
+  desc: "Débannit un utilisateur",
+  alias: ["debannir", "pardon", "deban"]
+}, async (hani, ms, { repondre, superUser, arg }) => {
+  if (!superUser) return repondre("❌ Réservé au propriétaire.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else if (arg[0]) {
+    target = arg[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+  } else {
+    return repondre("❌ Usage: .unban @user");
+  }
+  
+  try {
+    // Débannir dans MySQL
+    await db.unbanUser(target);
+    
+    // Retirer du fichier local
+    const banFile = path.join(__dirname, '../DataBase/banned.json');
+    if (fs.existsSync(banFile)) {
+      let bannedList = JSON.parse(fs.readFileSync(banFile));
+      bannedList = bannedList.filter(jid => jid !== target);
+      fs.writeFileSync(banFile, JSON.stringify(bannedList, null, 2));
+    }
+    
+    await repondre(`✅ @${target.split('@')[0]} a été débanni et peut à nouveau utiliser le bot.`, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "banlist",
+  classe: "👮 Modération",
+  react: "📋",
+  desc: "Affiche la liste des utilisateurs bannis",
+  alias: ["listban", "banned"]
+}, async (hani, ms, { repondre, superUser }) => {
+  if (!superUser) return repondre("❌ Réservé au propriétaire.");
+  
+  try {
+    // Récupérer les bannis de MySQL
+    const dbBanned = await db.query ? 
+      (await db.query('SELECT jid FROM users WHERE is_banned = TRUE'))[0] : [];
+    
+    // Aussi du fichier local
+    const banFile = path.join(__dirname, '../DataBase/banned.json');
+    let localBanned = [];
+    if (fs.existsSync(banFile)) {
+      localBanned = JSON.parse(fs.readFileSync(banFile));
+    }
+    
+    const allBanned = [...new Set([...dbBanned.map(r => r.jid), ...localBanned])];
+    
+    if (allBanned.length === 0) {
+      return repondre("📋 Aucun utilisateur banni.");
+    }
+    
+    let message = `
+╔══════════════════════════════╗
+║     🚫 UTILISATEURS BANNIS   ║
+╠══════════════════════════════╣
+║ Total: ${allBanned.length} banni(s)
+╠══════════════════════════════╣\n`;
+    
+    for (const jid of allBanned) {
+      message += `║ 🚫 @${jid.split('@')[0]}\n`;
+    }
+    
+    message += `╚══════════════════════════════╝`;
+    
+    await repondre(message, { mentions: allBanned });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "warn",
+  classe: "👮 Modération",
+  react: "⚠️",
+  desc: "Avertit un utilisateur. 3 warns = kick. Usage: .warn @user [raison]",
+  alias: ["avertir", "avertissement"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser, arg }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else {
+    return repondre("❌ Usage: .warn @user [raison]");
+  }
+  
+  const groupId = ms.key.remoteJid;
+  const reason = arg.slice(1).join(' ') || 'Aucune raison spécifiée';
+  
+  try {
+    // Ajouter le warn dans MySQL
+    const warnCount = await db.addWarn(groupId, target);
+    const maxWarns = 3;
+    
+    let message = `
+╔══════════════════════════════╗
+║      ⚠️ AVERTISSEMENT        ║
+╠══════════════════════════════╣
+║ 👤 @${target.split('@')[0]}
+║ 📝 Raison: ${reason}
+║ ⚠️ Warns: ${warnCount}/${maxWarns}
+╠══════════════════════════════╣`;
+    
+    if (warnCount >= maxWarns) {
+      // Kicker l'utilisateur
+      try {
+        await hani.groupParticipantsUpdate(groupId, [target], 'remove');
+        message += `\n║ 🚪 EXPULSÉ: ${maxWarns} warns atteints!`;
+        // Reset les warns après kick
+        await db.resetWarns(groupId, target);
+      } catch (kickError) {
+        message += `\n║ ❌ Impossible d'expulser (pas admin?)`;
+      }
+    } else {
+      message += `\n║ ⚠️ Encore ${maxWarns - warnCount} warn(s) avant kick`;
+    }
+    
+    message += `\n╚══════════════════════════════╝`;
+    
+    await repondre(message, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "unwarn",
+  classe: "👮 Modération",
+  react: "✅",
+  desc: "Retire les avertissements d'un utilisateur",
+  alias: ["pardonwarn", "resetwarn", "delwarn"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else {
+    return repondre("❌ Usage: .unwarn @user");
+  }
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    await db.resetWarns(groupId, target);
+    await repondre(`✅ Les avertissements de @${target.split('@')[0]} ont été réinitialisés.`, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "checkwarn",
+  classe: "👮 Modération",
+  react: "📊",
+  desc: "Vérifie les avertissements d'un utilisateur",
+  alias: ["warns", "warncount"]
+}, async (hani, ms, { repondre, verifGroupe, arg }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  let target;
+  
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else {
+    target = ms.key.participant || ms.key.remoteJid;
+  }
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    const warnCount = await db.getWarns(groupId, target);
+    await repondre(`⚠️ @${target.split('@')[0]} a ${warnCount}/3 avertissement(s).`, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// 👢 KICK & ACTIONS GROUPE (FONCTIONNEL BAILEYS API)
+// ═══════════════════════════════════════════════════════════
+
+ovlcmd({
+  nom_cmd: "kick",
+  classe: "👮 Modération",
+  react: "👢",
+  desc: "Expulse un membre du groupe. Usage: .kick @user",
+  alias: ["expulser", "remove", "virer"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser, verif_Ovl_Admin }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  if (!verif_Ovl_Admin) return repondre("❌ Je dois être admin pour expulser.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  
+  if (!mentioned || mentioned.length === 0) {
+    return repondre("❌ Usage: .kick @user");
+  }
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    await hani.groupParticipantsUpdate(groupId, mentioned, 'remove');
+    const names = mentioned.map(jid => `@${jid.split('@')[0]}`).join(', ');
+    await repondre(`👢 ${names} a été expulsé(e) du groupe!`, { mentions: mentioned });
+  } catch (e) {
+    await repondre(`❌ Impossible d'expulser: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "add",
+  classe: "👮 Modération",
+  react: "➕",
+  desc: "Ajoute un membre au groupe. Usage: .add numéro",
+  alias: ["ajouter", "invite"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser, verif_Ovl_Admin, arg }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  if (!verif_Ovl_Admin) return repondre("❌ Je dois être admin pour ajouter.");
+  
+  if (!arg[0]) return repondre("❌ Usage: .add numéro");
+  
+  const number = arg[0].replace(/[^0-9]/g, '');
+  const jid = number + '@s.whatsapp.net';
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    const result = await hani.groupParticipantsUpdate(groupId, [jid], 'add');
+    
+    if (result[0]?.status === '403') {
+      // L'utilisateur a des paramètres de confidentialité, envoyer invitation
+      const code = await hani.groupInviteCode(groupId);
+      await hani.sendMessage(jid, { 
+        text: `👋 Vous êtes invité à rejoindre le groupe!\nhttps://chat.whatsapp.com/${code}` 
+      });
+      await repondre(`📩 L'utilisateur a des restrictions. Une invitation lui a été envoyée.`);
+    } else {
+      await repondre(`✅ @${number} a été ajouté au groupe!`, { mentions: [jid] });
+    }
+  } catch (e) {
+    await repondre(`❌ Impossible d'ajouter: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "promote",
+  classe: "👮 Modération",
+  react: "👑",
+  desc: "Promeut un membre en admin. Usage: .promote @user",
+  alias: ["admin", "promouvoir"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser, verif_Ovl_Admin }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  if (!verif_Ovl_Admin) return repondre("❌ Je dois être admin pour promouvoir.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  
+  if (!mentioned || mentioned.length === 0) {
+    return repondre("❌ Usage: .promote @user");
+  }
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    await hani.groupParticipantsUpdate(groupId, mentioned, 'promote');
+    const names = mentioned.map(jid => `@${jid.split('@')[0]}`).join(', ');
+    await repondre(`👑 ${names} est maintenant admin!`, { mentions: mentioned });
+  } catch (e) {
+    await repondre(`❌ Impossible de promouvoir: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "demote",
+  classe: "👮 Modération",
+  react: "⬇️",
+  desc: "Retire les droits admin d'un membre. Usage: .demote @user",
+  alias: ["unadmin", "retrograder"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser, verif_Ovl_Admin }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  if (!verif_Ovl_Admin) return repondre("❌ Je dois être admin pour rétrograder.");
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  
+  if (!mentioned || mentioned.length === 0) {
+    return repondre("❌ Usage: .demote @user");
+  }
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    await hani.groupParticipantsUpdate(groupId, mentioned, 'demote');
+    const names = mentioned.map(jid => `@${jid.split('@')[0]}`).join(', ');
+    await repondre(`⬇️ ${names} n'est plus admin.`, { mentions: mentioned });
+  } catch (e) {
+    await repondre(`❌ Impossible de rétrograder: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "mute",
+  classe: "👮 Modération",
+  react: "🔇",
+  desc: "Ferme le groupe (seuls les admins peuvent parler)",
+  alias: ["fermer", "silence"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser, verif_Ovl_Admin }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  if (!verif_Ovl_Admin) return repondre("❌ Je dois être admin.");
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    await hani.groupSettingUpdate(groupId, 'announcement');
+    await repondre("🔇 Groupe fermé. Seuls les admins peuvent envoyer des messages.");
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "unmute",
+  classe: "👮 Modération",
+  react: "🔊",
+  desc: "Ouvre le groupe (tout le monde peut parler)",
+  alias: ["ouvrir", "unsilence"]
+}, async (hani, ms, { repondre, verifGroupe, verifAdmin, superUser, verif_Ovl_Admin }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  if (!verifAdmin && !superUser) return repondre("❌ Réservé aux admins.");
+  if (!verif_Ovl_Admin) return repondre("❌ Je dois être admin.");
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    await hani.groupSettingUpdate(groupId, 'not_announcement');
+    await repondre("🔊 Groupe ouvert. Tout le monde peut envoyer des messages.");
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+ovlcmd({
+  nom_cmd: "groupinfo",
+  classe: "🔍 Info",
+  react: "ℹ️",
+  desc: "Affiche les informations complètes du groupe",
+  alias: ["infogroupe", "ginfo"]
+}, async (hani, ms, { repondre, verifGroupe }) => {
+  if (!verifGroupe) return repondre("❌ Commande réservée aux groupes.");
+  
+  const groupId = ms.key.remoteJid;
+  
+  try {
+    const metadata = await hani.groupMetadata(groupId);
+    const admins = metadata.participants.filter(p => p.admin);
+    const superadmins = metadata.participants.filter(p => p.admin === 'superadmin');
+    
+    const info = `
+╔══════════════════════════════╗
+║     ℹ️ INFOS DU GROUPE        ║
+╠══════════════════════════════╣
+║ 📛 Nom: ${metadata.subject}
+║ 🆔 ID: ${metadata.id}
+║ 📝 Description: ${metadata.desc?.slice(0, 100) || 'Aucune'}
+║ 👥 Membres: ${metadata.participants.length}
+║ 👑 Admins: ${admins.length}
+║ 🌟 Super Admin: ${superadmins.length}
+║ 📅 Créé: ${new Date(metadata.creation * 1000).toLocaleDateString('fr-FR')}
+║ 🔒 Restrictions: ${metadata.restrict ? 'Oui' : 'Non'}
+║ 📢 Annonces: ${metadata.announce ? 'Oui' : 'Non'}
+╚══════════════════════════════╝`;
+    
+    await repondre(info);
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// 👤 WHOIS AMÉLIORÉ
+// ═══════════════════════════════════════════════════════════
+
+ovlcmd({
+  nom_cmd: "whoisv2",
+  classe: "🔍 Info",
+  react: "👤",
+  desc: "Informations détaillées sur un utilisateur avec données MySQL",
+  alias: ["profilev2", "userstats"]
+}, async (hani, ms, { repondre, verifGroupe, arg }) => {
+  let target;
+  
+  const mentioned = ms.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  if (mentioned && mentioned.length > 0) {
+    target = mentioned[0];
+  } else if (ms.message?.extendedTextMessage?.contextInfo?.participant) {
+    target = ms.message.extendedTextMessage.contextInfo.participant;
+  } else {
+    target = ms.key.participant || ms.key.remoteJid;
+  }
+  
+  try {
+    // Récupérer infos MySQL
+    const user = await db.getUser(target);
+    const isBanned = await db.isBanned(target);
+    const isSudo = await db.isSudo(target);
+    const isSpied = await db.isUnderSurveillance(target);
+    
+    let isAdmin = false;
+    let groupName = "N/A";
+    let memberSince = "N/A";
+    
+    if (verifGroupe) {
+      const metadata = await hani.groupMetadata(ms.key.remoteJid);
+      groupName = metadata.subject;
+      const participant = metadata.participants.find(p => p.id === target);
+      isAdmin = participant?.admin ? true : false;
+    }
+    
+    // Récupérer photo de profil
+    let ppUrl = "Aucune";
+    try {
+      ppUrl = await hani.profilePictureUrl(target, 'image');
+      ppUrl = "Disponible ✅";
+    } catch (e) {
+      ppUrl = "Masquée/Privée 🔒";
+    }
+    
+    const info = `
+╔══════════════════════════════════════╗
+║         👤 PROFIL UTILISATEUR        ║
+╠══════════════════════════════════════╣
+║ 📱 Numéro: +${target.split('@')[0]}
+║ 🔗 JID: @${target.split('@')[0]}
+╠══════════════════════════════════════╣
+║ 📊 STATISTIQUES BOT
+║ ├ 💬 Messages: ${user?.messages || 0}
+║ ├ ⭐ XP: ${user?.xp || 0}
+║ ├ 🎖️ Niveau: ${user?.level || 1}
+║ └ 📅 Dernière vue: ${user?.last_seen ? new Date(user.last_seen).toLocaleString('fr-FR') : 'N/A'}
+╠══════════════════════════════════════╣
+║ 🔐 STATUTS
+║ ├ 🚫 Banni: ${isBanned ? 'Oui ❌' : 'Non ✅'}
+║ ├ 👑 Sudo: ${isSudo ? 'Oui ✅' : 'Non'}
+║ ├ 🕵️ Surveillé: ${isSpied ? 'Oui 👁️' : 'Non'}
+║ └ 📷 Photo: ${ppUrl}
+╠══════════════════════════════════════╣
+║ 👥 GROUPE: ${groupName}
+║ ├ 👑 Admin: ${isAdmin ? 'Oui ✅' : 'Non ❌'}
+╚══════════════════════════════════════╝`;
+    
+    await repondre(info, { mentions: [target] });
+  } catch (e) {
+    await repondre(`❌ Erreur: ${e.message}`);
+  }
+});
+
+console.log("✅ Advanced Commands loaded - HANI-MD V3.1 - Spy & User Management FUNCTIONAL");
